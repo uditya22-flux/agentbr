@@ -45,10 +45,12 @@ def root():
 
 @app.get("/health")
 def health():
+    has_supabase = bool(os.environ.get("SUPABASE_URL") and os.environ.get("SUPABASE_KEY"))
     return {
         "status": "AgentBridge Gateway running",
         "version": "5.0.0",
         "mode": "enforcement",
+        "database": "configured" if has_supabase else "set SUPABASE_URL and SUPABASE_KEY",
         "ai_analysis": "groq_enabled" if os.environ.get("GROQ_API_KEY") else "disabled — set GROQ_API_KEY",
     }
 
