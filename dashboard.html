@@ -202,7 +202,7 @@ tbody tr:hover{background:var(--s2)}
     </div>
     <div class="api-input-wrap" style="width:220px">
       <span class="api-label">backend</span>
-      <input class="api-field" id="backendInput" placeholder="auto (same origin)" style="width:180px" value="" autocomplete="off">
+      <input class="api-field" id="backendInput" placeholder="https://app.onrender.com" style="width:220px" value="" autocomplete="off" title="Use full URL including .onrender.com">
     </div>
     <button class="fetch-btn" id="fetchBtn" onclick="fetchAll()">
       <span id="fetchIcon">↓</span> Fetch Data
@@ -509,9 +509,44 @@ let allLogs = [];
 let allIncidents = [];
 let lastReport = null;
 
+function normalizeBackendUrl(url) {
+  if (!url) return url;
+  let u = url.trim().replace(/\/$/, '');
+  // Common typo: https://name.onrender  (missing .com)
+  if (/^https?:\/\/[a-z0-9-]+\.onrender$/i.test(u)) {
+    u += '.com';
+  }
+  return u;
+}
+
+function formatApiDetail(detail) {
+  if (detail == null) return '';
+  if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail)) {
+    return detail.map(d => (d && typeof d === 'object' && d.msg) ? d.msg : String(d)).join('; ');
+  }
+  return String(detail);
+}
+
+async function readErrorBody(res) {
+  const t = await res.text();
+  try {
+    const j = JSON.parse(t);
+    const d = formatApiDetail(j.detail);
+    if (d) return d;
+    return j.message || t.slice(0, 300);
+  } catch {
+    return t.slice(0, 300) || res.statusText || String(res.status);
+  }
+}
+
 function getBackend() {
   const input = document.getElementById('backendInput');
-  const manual = (input?.value || '').trim().replace(/\/$/, '');
+  let manual = (input?.value || '').trim().replace(/\/$/, '');
+  manual = normalizeBackendUrl(manual);
+  if (input && manual !== (input.value || '').trim().replace(/\/$/, '')) {
+    input.value = manual;
+  }
   const sameOrigin = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
     ? window.location.origin.replace(/\/$/, '')
     : '';
@@ -698,6 +733,16 @@ function renderReport(report) {
 // ── Drift renderer ───────────────────────────────────────────────
 function renderDrift(data) {
   const el = document.getElementById('driftContent');
+  if (data && data.detail) {
+    el.innerHTML = `<div class="empty-box"><div class="empty-icon">🔐</div><div class="empty-text" style="max-width:360px">${esc(String(data.detail))}<br><br><span style="font-size:11px;color:var(--t3)">Use an API key that exists in Supabase <code>api_keys</code>, or set <code>DEV_API_KEY</code> on the server to match your dashboard key.</span></div></div>`;
+    document.getElementById('statDrift').textContent = 'auth error';
+    return;
+  }
+  if (!data || typeof data.status !== 'string') {
+    el.innerHTML = `<div class="empty-box"><div class="empty-text">Unexpected response — check backend URL and API key.</div></div>`;
+    document.getElementById('statDrift').textContent = '—';
+    return;
+  }
   if (data.status === 'insufficient_data') {
     el.innerHTML = `<div class="empty-box"><div class="empty-icon">📊</div><div class="empty-text">${data.message}</div></div>`;
     document.getElementById('statDrift').textContent = '—';
@@ -757,14 +802,24 @@ async function fetchAll() {
       fetch(`${backend}/incidents?api_key=${encodeURIComponent(key)}`),
       fetch(`${backend}/report?api_key=${encodeURIComponent(key)}`)
     ]);
+    let authHint = '';
     if (logsRes.status==='fulfilled' && logsRes.value.ok) {
       allLogs = await logsRes.value.json();
       renderLogTable(allLogs, 'logTableWrap', 'logCount');
       updateStats(allLogs);
+    } else if (logsRes.status==='fulfilled' && !logsRes.value.ok) {
+      const msg = await readErrorBody(logsRes.value);
+      authHint = msg;
+      toast(`Logs: ${logsRes.value.status} — ${msg}`, 7000);
+      allLogs = [];
+      renderLogTable([], 'logTableWrap', 'logCount');
+      updateStats([]);
     }
     if (incRes.status==='fulfilled' && incRes.value.ok) {
       allIncidents = await incRes.value.json();
       renderLogTable(allIncidents, 'incidentTableWrap', 'incidentCount');
+    } else if (incRes.status==='fulfilled' && !incRes.value.ok && !authHint) {
+      toast(`Incidents: ${incRes.value.status} — ${await readErrorBody(incRes.value)}`, 6000);
     }
     if (reportRes.status==='fulfilled' && reportRes.value.ok) {
       const report = await reportRes.value.json();
@@ -772,7 +827,11 @@ async function fetchAll() {
       updateRBIStatus(report);
     }
     setLive(`${allLogs.length} logs`);
-    toast(`✓ Loaded ${allLogs.length} logs · ${allIncidents.length} incidents`);
+    if (allLogs.length === 0 && authHint) {
+      toast('0 logs — fix API key (Supabase api_keys or DEV_API_KEY on server) or backend URL (.onrender.com)', 8000);
+    } else {
+      toast(`✓ Loaded ${allLogs.length} logs · ${allIncidents.length} incidents`);
+    }
     document.getElementById('demoKeyDisplay').textContent = `"${key}"`;
   } catch(e) {
     if (e.message && (e.message.includes('Failed to fetch') || e.message.includes('NetworkError'))) {
@@ -818,6 +877,11 @@ async function fetchDrift() {
   try {
     const res = await fetch(`${backend}/drift?api_key=${encodeURIComponent(key)}`);
     const data = await res.json();
+    if (!res.ok) {
+      renderDrift({ detail: data.detail || data.message || res.statusText });
+      toast(`Drift: ${res.status}`, 5000);
+      return;
+    }
     renderDrift(data);
     toast('✓ Drift analysis complete');
   } catch(e) { toast('Drift analysis failed — check backend'); document.getElementById('driftContent').innerHTML=`<div class="empty-box"><div class="empty-text">Failed to connect</div></div>`; }
@@ -830,6 +894,11 @@ async function fetchStructuring() {
   try {
     const res = await fetch(`${backend}/structuring?api_key=${encodeURIComponent(key)}`);
     const data = await res.json();
+    if (!res.ok) {
+      document.getElementById('structuringContent').innerHTML = `<div class="empty-box"><div class="empty-text">${esc(String(data.detail||data.message||res.status))}</div></div>`;
+      toast(`Structuring: ${res.status}`, 5000);
+      return;
+    }
     renderStructuring(data);
     toast('✓ Structuring scan complete');
   } catch(e) { toast('Structuring scan failed'); document.getElementById('structuringContent').innerHTML=`<div class="empty-box"><div class="empty-text">Failed to connect</div></div>`; }
@@ -852,9 +921,15 @@ async function sendQuery() {
       body: JSON.stringify({api_key: key, question})
     });
     const data = await res.json();
-    ans.textContent = data.answer || 'No answer returned';
+    if (!res.ok) {
+      ans.textContent = data.detail || data.message || `Error ${res.status}`;
+      toast(`Query failed (${res.status})`, 5000);
+      btn.disabled = false; btn.textContent = 'Ask →';
+      return;
+    }
+    ans.textContent = data.answer || 'No answer returned (no logs or empty result)';
     toast(`✓ Analysed ${data.logs_analyzed||0} logs`);
-  } catch(e) { ans.textContent = 'Query failed — check backend connection and GROQ_API_KEY'; toast('Query failed'); }
+  } catch(e) { ans.textContent = 'Query failed — check backend URL, API key, and GROQ_API_KEY on server for NL query'; toast('Query failed'); }
   btn.disabled = false; btn.textContent = 'Ask →';
 }
 
@@ -966,6 +1041,21 @@ async function submitManualLog() {
     });
     const data = await res.json();
 
+    if (!res.ok) {
+      const errMsg = formatApiDetail(data.detail) || data.message || JSON.stringify(data);
+      const el = document.getElementById('ml-result');
+      el.style.display = 'block';
+      el.style.background = 'var(--amber-l)';
+      el.style.border = '1px solid var(--amber-b)';
+      el.innerHTML = `
+        <div style="font-size:14px;font-weight:700;color:var(--amber);margin-bottom:8px">REQUEST FAILED (${res.status})</div>
+        <div style="font-size:12px;line-height:1.5;color:var(--text)">${esc(String(errMsg))}</div>
+        <div style="margin-top:10px;font-size:11px;color:var(--t3)">Tip: Backend URL must be full, e.g. <code>https://agentbr.onrender.com</code>. API key must match <code>DEV_API_KEY</code> on Render or exist in Supabase <code>api_keys</code>.</div>`;
+      toast(`Gateway error ${res.status}`, 6000);
+      btn.disabled = false; btn.textContent = '▶ Submit to Compliance Gateway';
+      return;
+    }
+
     const verdict = data.verdict || 'unknown';
     const verdictColor = verdict === 'allow' ? 'var(--teal)' : verdict === 'reject' ? 'var(--red)' : 'var(--amber)';
     const riskColor = data.risk_level === 'high' || data.risk_level === 'critical' ? 'var(--red)' : data.risk_level === 'medium' ? 'var(--amber)' : 'var(--teal)';
@@ -981,7 +1071,7 @@ async function submitManualLog() {
         <span style="font-size:12px;color:var(--t3)">Score: ${data.risk_score != null ? data.risk_score.toFixed(3) : '—'}</span>
         ${data.escalate_to_human ? '<span style="font-size:11px;background:var(--red-l);color:var(--red);border:1px solid var(--red-b);padding:2px 8px;border-radius:4px;font-weight:600">⚠ ESCALATE TO HUMAN</span>' : ''}
       </div>
-      ${data.ai_explanation ? `<div style="margin-bottom:8px;"><span style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em">AI Analysis (Groq)</span><div style="margin-top:4px;font-size:12px;color:var(--text);line-height:1.6">${esc(data.ai_explanation)}</div></div>` : ''}
+      ${data.ai_explanation ? `<div style="margin-bottom:8px;"><span style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em">Monitor analysis</span><div style="margin-top:4px;font-size:12px;color:var(--text);line-height:1.6">${esc(data.ai_explanation)}</div></div>` : ''}
       ${data.ai_recommended_action ? `<div style="margin-bottom:8px;"><span style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em">Recommended Action</span><div style="margin-top:4px;font-size:12px;color:var(--text);line-height:1.6">${esc(data.ai_recommended_action)}</div></div>` : ''}
       ${data.policy_violations?.length ? `<div><span style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em">Policy Violations</span><div style="margin-top:4px;display:flex;flex-direction:column;gap:4px">${data.policy_violations.map(v=>`<div style="font-size:11px;padding:5px 8px;background:var(--red-l);color:var(--red);border-radius:5px;border:1px solid var(--red-b)">${esc(v)}</div>`).join('')}</div></div>` : ''}
       <div style="margin-top:10px;font-size:10px;color:var(--t3);font-family:var(--mono)">log_hash: ${esc(data.log_hash || '—')}</div>
