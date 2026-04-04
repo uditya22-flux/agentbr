@@ -33,12 +33,14 @@ from routes.gateway_routes import router as gateway_router
 from routes.audit_routes import router as audit_router
 from routes.intelligence import router as intelligence_router
 from routes.manual_log import router as manual_router
+from routes.report_html import router as report_html_router
 from api.routes import router as disk_download_router
 
 app.include_router(gateway_router)
 app.include_router(audit_router)
 app.include_router(intelligence_router)
 app.include_router(manual_router)
+app.include_router(report_html_router)
 app.include_router(disk_download_router)
 
 @app.get("/", include_in_schema=False)

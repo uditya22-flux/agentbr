@@ -302,6 +302,7 @@ tbody tr:hover{background:var(--s2)}
           <div class="card-title">RBI compliance report</div>
           <div style="display:flex;gap:10px;align-items:center">
             <span class="endpoint ep-get"><span class="ep-method">GET</span>/report</span>
+            <span class="endpoint ep-get"><span class="ep-method">GET</span>/report/html</span>
             <span class="card-action" onclick="fetchReport()">↻ Load</span>
           </div>
         </div>
@@ -686,9 +687,10 @@ function renderReport(report) {
         <div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Verdict</div>
         <div style="font-size:12px;font-weight:600;color:${verdictColor}">${esc(verdict)}</div>
       </div>
-      <div style="display:flex;gap:8px;">
-        <button onclick="downloadReportJSON()" style="flex:1;background:var(--s2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--sans);">↓ Download JSON</button>
-        <button onclick="printReport()" style="flex:1;background:var(--text);color:#fff;border:none;border-radius:8px;padding:9px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--sans);">🖨 Print / Save PDF</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="downloadReportJSON()" style="flex:1;min-width:120px;background:var(--s2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--sans);">↓ Download JSON</button>
+        <button onclick="openPrintableReport()" style="flex:1;min-width:120px;background:var(--teal);color:#fff;border:none;border-radius:8px;padding:9px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--sans);">📄 Printable HTML</button>
+        <button onclick="printReport()" style="flex:1;min-width:120px;background:var(--text);color:#fff;border:none;border-radius:8px;padding:9px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--sans);">🖨 Print this tab</button>
       </div>
     </div>`;
 }
@@ -902,6 +904,13 @@ async function downloadReportJSON() {
     URL.revokeObjectURL(url);
     toast('✓ Report downloaded');
   } catch (e) { toast('Download failed — check connection'); }
+}
+
+function openPrintableReport() {
+  const key = getKey();
+  const backend = getBackend();
+  if (!key) { toast('Enter API key first'); return; }
+  window.open(`${backend}/report/html?api_key=${encodeURIComponent(key)}`, '_blank');
 }
 
 function printReport() {
