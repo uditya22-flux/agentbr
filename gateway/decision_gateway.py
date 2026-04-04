@@ -1,33 +1,51 @@
 """
 gateway/decision_gateway.py
-Central enforcement point. ALL decisions flow through here.
-No bypass possible — this is the only entry point.
-
-Flow:
-  1. Validate schema (reject on failure)
-  2. Score risk (stateful)
-  3. Enforce policies (hard reject or flag)
-  4. Run AI compliance analysis
-  5. Write immutable audit log
-  6. Return structured verdict to agent
+Flow: validate → numeric risk score → policy → deterministic monitor (core_ai) → file storage → audit log.
 """
-import os
+from datetime import datetime, timezone
+
 from models.schemas import DecisionRequest, DecisionResponse, RejectedDecision
 from validation.validator import validate
 from policy.engine import evaluate
-from risk.scorer import score
+from risk.scorer import score, ALLOW_THRESHOLD
 from app_logging.audit_logger import write as audit_write
-from core_ai.pipeline import process as ai_process
+from core_ai.pipeline import process as ai_process, dao_to_unified_dict
+from utils.file_manager import append_session_log, write_incident, write_session_report
+
+
+def _req_dump(req: DecisionRequest) -> dict:
+    try:
+        return req.model_dump()
+    except AttributeError:
+        return req.dict()
+
+
+def _serialize(model) -> dict:
+    if hasattr(model, "model_dump"):
+        return model.model_dump()
+    return model.dict()
+
+
+def _persist_monitor_artifacts(req: DecisionRequest, dao):
+    unified = dao_to_unified_dict(dao, {"decision_id": req.decision_id, "api_key": req.api_key})
+    try:
+        append_session_log(req.session_id, unified)
+        if dao.risk_level == "high":
+            write_incident(req.session_id, unified)
+        write_session_report(
+            req.session_id,
+            {
+                "session_id": req.session_id,
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "record": unified,
+            },
+        )
+    except Exception:
+        pass
+    return unified
 
 
 def process_decision(raw: dict) -> tuple[dict, int]:
-    """
-    Main gateway function. Returns (response_dict, http_status_code).
-    
-    Called by POST /decide endpoint only.
-    """
-
-    # ── STEP 1: VALIDATION ─────────────────────────────────────────────────
     is_valid, req, error = validate(raw)
     if not is_valid:
         log_hash = audit_write(
@@ -44,7 +62,7 @@ def process_decision(raw: dict) -> tuple[dict, int]:
             compliance_violations=[],
             input_data=raw.get("input", {}),
             output_data=raw.get("output", {}),
-            reasoning=raw.get("reasoning", ""),
+            reasoning=raw.get("reasoning", "") or "",
             confidence=0.0,
             ai_explanation=None,
             ai_recommended_action=None,
@@ -52,19 +70,16 @@ def process_decision(raw: dict) -> tuple[dict, int]:
             ai_regulatory_refs=[],
             ai_compliance_status="violation",
         )
-        return RejectedDecision(
+        return _serialize(RejectedDecision(
             decision_id=raw.get("decision_id", "unknown"),
             blocked_at="validation",
             reason=error,
             policy_rule=None,
             risk_score=None,
             log_hash=log_hash,
-        ).dict(), 422
+        )), 422
 
-    # ── STEP 2: RISK SCORING ───────────────────────────────────────────────
     risk_score, risk_level, risk_explanation = score(req)
-
-    # ── STEP 3: POLICY ENFORCEMENT ─────────────────────────────────────────
     policy_verdict, policy_violations = evaluate(req)
     blocking_violations = [v for v in policy_violations if v.block]
 
@@ -92,25 +107,26 @@ def process_decision(raw: dict) -> tuple[dict, int]:
             ai_regulatory_refs=[],
             ai_compliance_status="violation",
         )
-        return RejectedDecision(
+        return _serialize(RejectedDecision(
             decision_id=req.decision_id,
             blocked_at="policy",
             reason=blocker.reason,
             policy_rule=blocker.rule,
             risk_score=risk_score,
             log_hash=log_hash,
-        ).dict(), 403
+        )), 403
 
-    # ── STEP 4: AI COMPLIANCE ANALYSIS ────────────────────────────────────
-    dao = ai_process(req.dict())
-    final_verdict = policy_verdict  # allow | review
+    monitor_raw = _req_dump(req)
+    monitor_raw["output"] = {**monitor_raw.get("output", {}), "confidence": req.confidence}
+    dao = ai_process(monitor_raw)
+    unified = _persist_monitor_artifacts(req, dao)
 
-    # Override to review if risk score is in review zone
-    from risk.scorer import ALLOW_THRESHOLD
+    final_verdict = policy_verdict
     if risk_score >= ALLOW_THRESHOLD and final_verdict == "allow":
         final_verdict = "review"
+    if dao.risk_level == "high" and final_verdict == "allow":
+        final_verdict = "review"
 
-    # ── STEP 5: IMMUTABLE AUDIT LOG ────────────────────────────────────────
     log_hash = audit_write(
         api_key=req.api_key,
         decision_id=req.decision_id,
@@ -134,9 +150,8 @@ def process_decision(raw: dict) -> tuple[dict, int]:
         ai_compliance_status=dao.ai_compliance_status,
     )
 
-    # ── STEP 6: RETURN VERDICT ─────────────────────────────────────────────
-    http_code = 200 if final_verdict == "allow" else 202  # 202 = proceed with caution
-    return DecisionResponse(
+    http_code = 200 if final_verdict == "allow" else 202
+    return _serialize(DecisionResponse(
         decision_id=req.decision_id,
         verdict=final_verdict,
         risk_score=risk_score,
@@ -148,4 +163,5 @@ def process_decision(raw: dict) -> tuple[dict, int]:
         escalate_to_human=dao.ai_escalate_to_human,
         log_hash=log_hash,
         message=f"Decision {final_verdict.upper()} — logged and audited",
-    ).dict(), http_code
+        monitor=unified,
+    )), http_code

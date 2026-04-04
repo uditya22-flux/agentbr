@@ -21,6 +21,12 @@ class DAO:
     agent_name: str = ""
     action_type: str = ""
 
+    # Deterministic monitor (AgentBridge core_ai)
+    anomalies: List[str] = field(default_factory=list)
+    clause_status: Dict[str, str] = field(default_factory=dict)
+    compliance_percent: int = 100
+    dao_record: Dict[str, str] = field(default_factory=dict)
+
     ai_reasoning: Optional[str] = None
     ai_action_summary: Optional[str] = None
     ai_compliance_status: Optional[str] = None

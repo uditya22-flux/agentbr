@@ -83,8 +83,8 @@ def write(
     entry = {
         **record,
         "api_key": api_key,
-        "inputs": json.dumps(input_data)[:1000],
-        "output": json.dumps(output_data)[:1000],
+        "inputs": json.dumps(input_data)[:5000],
+        "output": json.dumps(output_data)[:5000],
         "ai_explanation": ai_explanation,
         "ai_recommended_action": ai_recommended_action,
         "ai_escalate_to_human": ai_escalate_to_human,

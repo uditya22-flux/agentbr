@@ -28,8 +28,8 @@ def detect_drift(logs: List[Dict[str, Any]]) -> dict:
         except Exception:
             continue
 
-    if len(this_week) < 5 or len(last_week) < 5:
-        return {"status": "insufficient_data", "message": "Need at least 5 logs per week to detect drift."}
+    if len(this_week) < 2 or len(last_week) < 2:
+        return {"status": "insufficient_data", "message": "Need at least 2 logs per week to detect drift."}
 
     def stats(logs):
         total = len(logs)

@@ -31,8 +31,8 @@ def _validate_api_key(api_key: str) -> bool:
     """Check api_key exists in Supabase api_keys table."""
     if not api_key:
         return False
-    # Dev bypass — remove in production
-    if api_key == os.environ.get("DEV_API_KEY", "demo_key_001") or api_key == "demo_key_001":
+    dev_key = os.environ.get("DEV_API_KEY")
+    if dev_key and api_key == dev_key:
         return True
     try:
         result = supabase.table("api_keys")\

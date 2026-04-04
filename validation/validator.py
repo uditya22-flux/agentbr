@@ -1,56 +1,46 @@
 """
 validation/validator.py
-Strict input validation before anything enters the pipeline.
-Rejects invalid JSON, missing fields, null reasoning, unknown action types.
+Empty reasoning is allowed — deterministic monitor flags Clause 3.1.
 """
 from typing import Tuple, Optional
-from models.schemas import DecisionRequest
+from models.schemas import DecisionRequest, KNOWN_GATEWAY_ACTIONS
 
-
-KNOWN_ACTION_TYPES = {"approve", "reject", "flag", "escalate", "query", "review"}
-REQUIRED_FIELDS = ["session_id", "agent_id", "user_id", "action_type", "input", "reasoning", "confidence", "api_key"]
+_STR_REQUIRED = ("session_id", "agent_id", "user_id", "action_type", "api_key")
 
 
 def validate(raw: dict) -> Tuple[bool, Optional[DecisionRequest], Optional[str]]:
-    """
-    Returns (is_valid, parsed_request, error_message)
-    
-    Pseudocode:
-        if missing required fields → reject
-        if reasoning is null/empty → reject
-        if action_type not in known set → reject
-        if confidence not in [0.0, 1.0] → reject
-        if input is not dict → reject
-    """
-    # Check required fields
-    missing = [f for f in REQUIRED_FIELDS if not raw.get(f)]
+    missing = []
+    for f in _STR_REQUIRED:
+        v = raw.get(f)
+        if v is None or (isinstance(v, str) and not v.strip()):
+            missing.append(f)
+    if "input" not in raw or raw.get("input") is None:
+        missing.append("input")
+    if "confidence" not in raw or raw.get("confidence") is None:
+        missing.append("confidence")
+
     if missing:
         return False, None, f"Missing required fields: {missing}"
 
-    # Null reasoning check
-    reasoning = raw.get("reasoning", "")
-    if not reasoning or not str(reasoning).strip():
-        return False, None, "reasoning cannot be null or empty — violates RBI FREE-AI Sutra 6 (Explainability)"
+    if raw.get("action_type") not in KNOWN_GATEWAY_ACTIONS:
+        return False, None, f"Unknown action_type '{raw.get('action_type')}'. Must be one of {sorted(KNOWN_GATEWAY_ACTIONS)}"
 
-    # Action type check
-    if raw.get("action_type") not in KNOWN_ACTION_TYPES:
-        return False, None, f"Unknown action_type '{raw.get('action_type')}'. Must be one of {KNOWN_ACTION_TYPES}"
-
-    # Confidence range
     try:
-        confidence = float(raw.get("confidence", -1))
+        confidence = float(raw.get("confidence"))
         if not (0.0 <= confidence <= 1.0):
             raise ValueError
     except (TypeError, ValueError):
         return False, None, "confidence must be a float between 0.0 and 1.0"
 
-    # Input must be a dict
     if not isinstance(raw.get("input"), dict):
         return False, None, "input must be a JSON object"
 
-    # Parse through Pydantic for full validation
+    data = dict(raw)
+    if "reasoning" not in data or data.get("reasoning") is None:
+        data["reasoning"] = ""
+
     try:
-        request = DecisionRequest(**raw)
+        request = DecisionRequest(**data)
         return True, request, None
     except Exception as e:
         return False, None, str(e)

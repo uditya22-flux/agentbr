@@ -217,6 +217,8 @@ def clean_report(raw: Dict[str, Any]) -> Dict[str, Any]:
     clean_decisions = [_clean_decision(d, i) for i, d in enumerate(raw_decisions)]
 
     return {
+        "compliance_percent": score,
+        "overall_status": verdict_status,
         "_meta": {
             "cleaned_by":        "AgentBridge Report Cleaner v1.0",
             "cleaned_at":        datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),

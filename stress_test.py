@@ -1,10 +1,9 @@
 """
 AgentBridge v5 — Stress Test
-Tests all endpoints under load and validates Groq AI responses.
+Tests endpoints under load. Set DEV_API_KEY on the server to match --api_key for local bypass.
 
 Usage:
-    python stress_test.py --backend https://your-app.onrender.com --api_key demo_key_001
-    python stress_test.py --backend http://localhost:8000 --api_key test123 --requests 50
+    python stress_test.py --backend http://localhost:8000 --api_key test123 --requests 20
 """
 import httpx
 import time
@@ -42,6 +41,36 @@ SCENARIOS = [
             "output": {"approved": True},
             "reasoning": "Customer has verified KYC and clean transaction history. Risk score within acceptable threshold.",
             "confidence": 0.92,
+        }
+    },
+    {
+        "name": "Clean transfer with KYC",
+        "expect_verdict": "allow",
+        "payload": {
+            "api_key": KEY,
+            "agent_id": "PaymentAgent-v1",
+            "session_id": f"stress-{uuid.uuid4().hex[:8]}",
+            "user_id": "user_t1",
+            "action_type": "transfer",
+            "input": {"amount": 25000, "kyc_verified": True},
+            "output": {"status": "queued"},
+            "reasoning": "Verified payee and KYC; within limits.",
+            "confidence": 0.9,
+        }
+    },
+    {
+        "name": "Clean loan high amount + KYC",
+        "expect_verdict": "allow",
+        "payload": {
+            "api_key": KEY,
+            "agent_id": "LoanAgent-v1",
+            "session_id": f"stress-{uuid.uuid4().hex[:8]}",
+            "user_id": "user_loan",
+            "action_type": "loan",
+            "input": {"amount": 120000, "kyc_verified": True, "risk_score": 0.15},
+            "output": {"approved": True},
+            "reasoning": "Qualified borrower; documentation complete.",
+            "confidence": 0.91,
         }
     },
     {
@@ -140,7 +169,12 @@ def send_request(scenario, idx):
     url = f"{BASE}{endpoint}"
     start = time.time()
     try:
-        r = httpx.post(url, json=scenario["payload"], timeout=30)
+        r = httpx.post(
+            url,
+            json=scenario["payload"],
+            headers={"X-API-Key": KEY},
+            timeout=30,
+        )
         elapsed = round((time.time() - start) * 1000)
         data = r.json()
         verdict = data.get("verdict", "—")
@@ -189,7 +223,7 @@ def run_stress():
     try:
         h = httpx.get(f"{BASE}/health", timeout=10)
         health = h.json()
-        print(f"  Health: {health.get('status')} | AI: {health.get('ai_analysis')}\n")
+        print(f"  Health: {health.get('status')} | worker_llm: {health.get('worker_llm', '—')}\n")
     except Exception as e:
         print(f"  WARNING: Health check failed: {e}\n")
 
@@ -235,7 +269,7 @@ def run_stress():
     print(f"  Total requests  : {len(RESULTS)}")
     print(f"  Passed          : {passed} ({round(passed/len(RESULTS)*100)}%)")
     print(f"  Failed          : {failed}")
-    print(f"  AI responses    : {ai_responses}/{len(RESULTS)} (Groq active: {ai_responses > 0})")
+    print(f"  Explanations    : {ai_responses}/{len(RESULTS)} (deterministic monitor fills ai_explanation)")
     print(f"  Avg latency     : {avg_lat}ms")
     print(f"  P95 latency     : {p95}ms")
     print(f"  Total wall time : {total_time}ms")
