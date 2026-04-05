@@ -89,8 +89,25 @@ def _clean_decision(raw_dec: dict, index: int) -> dict:
     amount     = input_data.get("amount")
     kyc        = input_data.get("kyc_verified", None)
     confidence = output_data.get("confidence")
-    action     = raw_dec.get("action_type", "unknown")
-    risk       = raw_dec.get("risk_level", "unknown")
+    summary = raw_dec.get("action_summary")
+    action  = raw_dec.get("action_type", "unknown")
+    
+    # Improve action string based on metadata
+    if action == "loan":
+        val = input_data.get("loan_amount") or input_data.get("amount")
+        if val:
+            action = f"Lending Transaction (₹{val})"
+        else:
+            action = "Lending Transaction"
+    elif action == "transaction":
+        val = input_data.get("amount")
+        if val:
+            action = f"Payment Transaction (₹{val})"
+    
+    # If we have a summary from AI, prioritize it in a display field
+    display_action = summary or action
+
+    risk = raw_dec.get("risk_level", "low")
 
     flags = []
     if risk == "high" and kyc is False:
@@ -115,6 +132,7 @@ def _clean_decision(raw_dec: dict, index: int) -> dict:
         "timestamp":       _fmt_ts(raw_dec.get("timestamp", "")),
         "timestamp_raw":   raw_dec.get("timestamp", ""),
         "action_type":     action,
+        "display_action":  display_action,
         "risk_level":      risk,
         "reasoning":       reasoning,
         "reasoning_valid": reasoning_valid,
@@ -174,8 +192,11 @@ def clean_report(raw: dict) -> dict:
     clean_ct = ss.get("clean", 0)
     score    = round(((total - flagged) / max(total, 1)) * 100)
 
-    raw_decisions  = raw.get("flagged_decisions", [])
-    clean_decisions = [_clean_decision(d, i) for i, d in enumerate(raw_decisions)]
+    raw_flagged = raw.get("flagged_decisions", [])
+    raw_all     = raw.get("all_decisions", [])
+    
+    clean_flagged = [_clean_decision(d, i) for i, d in enumerate(raw_flagged)]
+    clean_all     = [_clean_decision(d, i) for i, d in enumerate(raw_all)]
 
     verdict_text = raw.get("verdict", "")
     verdict_status = (
@@ -213,7 +234,8 @@ def clean_report(raw: dict) -> dict:
             "message": verdict_text,
             "action_required": verdict_status in ("NON_COMPLIANT", "PARTIAL"),
         },
-        "decisions": clean_decisions,
+        "flagged_decisions": clean_flagged,
+        "all_decisions":     clean_all,
         "compliance": {
             "coverage":   _clean_coverage(raw.get("compliance_coverage", {})),
             "violations": _clean_violations(raw.get("violation_summary", {})),

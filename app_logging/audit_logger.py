@@ -56,6 +56,7 @@ def write(
     ai_escalate_to_human: bool,
     ai_regulatory_refs: list,
     ai_compliance_status: Optional[str],
+    ai_action_summary: Optional[str] = None,
 ) -> str:
     """
     Writes one immutable log entry. Returns the log_hash.
@@ -90,6 +91,7 @@ def write(
         "ai_escalate_to_human": ai_escalate_to_human,
         "ai_regulatory_refs": ai_regulatory_refs,
         "ai_compliance_status": ai_compliance_status,
+        "ai_action_summary": ai_action_summary,
         "previous_hash": previous_hash,
         "log_hash": log_hash,
         "flagged": verdict in ("reject", "review"),

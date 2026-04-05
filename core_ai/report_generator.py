@@ -94,12 +94,30 @@ def generate_report(session_id: str, daos: List[DAO]) -> Dict[str, Any]:
             "risk_breakdown": _risk_breakdown(daos),
         },
 
-        # ── Flagged Decisions (full detail) ───────────
+        # ── All Decisions (Full Audit Trail) ───────────
+        "all_decisions": [
+            {
+                "decision_id": dao.decision_id,
+                "timestamp": dao.timestamp,
+                "action_type": dao.action_type,
+                "action_summary": getattr(dao, "ai_action_summary", None) or dao.action_type,
+                "risk_level": dao.risk_level,
+                "flag_reason": dao.flag_reason,
+                "input": dao.input,
+                "reasoning": dao.reasoning,
+                "output": dao.output,
+                "compliance_violations": dao.compliance_violations,
+            }
+            for dao in daos
+        ],
+
+        # ── Flagged Decisions (convenience list) ────────
         "flagged_decisions": [
             {
                 "decision_id": dao.decision_id,
                 "timestamp": dao.timestamp,
                 "action_type": dao.action_type,
+                "action_summary": getattr(dao, "ai_action_summary", None) or dao.action_type,
                 "risk_level": dao.risk_level,
                 "flag_reason": dao.flag_reason,
                 "input": dao.input,

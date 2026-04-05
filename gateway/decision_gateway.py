@@ -69,6 +69,7 @@ def process_decision(raw: dict) -> tuple[dict, int]:
             ai_escalate_to_human=True,
             ai_regulatory_refs=[],
             ai_compliance_status="violation",
+            ai_action_summary="Policy enforcement: rejection"
         )
         return _serialize(RejectedDecision(
             decision_id=raw.get("decision_id", "unknown"),
@@ -106,6 +107,7 @@ def process_decision(raw: dict) -> tuple[dict, int]:
             ai_escalate_to_human=True,
             ai_regulatory_refs=[],
             ai_compliance_status="violation",
+            ai_action_summary=f"Policy rejection: {blocker.rule}"
         )
         return _serialize(RejectedDecision(
             decision_id=req.decision_id,
@@ -148,6 +150,7 @@ def process_decision(raw: dict) -> tuple[dict, int]:
         ai_escalate_to_human=dao.ai_escalate_to_human,
         ai_regulatory_refs=dao.ai_regulatory_refs,
         ai_compliance_status=dao.ai_compliance_status,
+        ai_action_summary=dao.ai_action_summary
     )
 
     http_code = 200 if final_verdict == "allow" else 202

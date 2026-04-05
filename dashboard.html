@@ -1679,13 +1679,20 @@
       document.getElementById('drawerDecisionId').textContent = log.decision_id || '—';
       document.getElementById('drawerTitle').textContent = log.agent_name || 'Log detail';
       const body = document.getElementById('drawerBody');
-      const riskClass = log.risk_level === 'high' ? 'b-high' : log.risk_level === 'medium' ? 'b-med' : 'b-low';
-      const flagged = log.flagged ? '<span class="badge b-high">⚠ flagged</span>' : '<span class="badge b-low">✓ clean</span>';
-      body.innerHTML = `
+    let actionStr = log.ai_action_summary || log.action || log.action_type || '—';
+    if (actionStr === 'loan' || actionStr === 'loan_approval') {
+      const amt = (log.inputs?.loan_amount || log.inputs?.amount);
+      if (amt) actionStr = `Lending Transaction (₹${amt})`;
+    } else if (actionStr === 'transaction' || actionStr === 'approve') {
+      const amt = log.inputs?.amount;
+      if (amt) actionStr = `Payment Transaction (₹${amt})`;
+    }
+
+    body.innerHTML = `
     <div><div class="d-section-title">Overview</div>
     <div class="d-kv">
       <div class="d-row"><span class="dk">Agent</span><span class="dv">${esc(log.agent_name || log.agent_id || '—')}</span></div>
-      <div class="d-row"><span class="dk">Action</span><span class="dv">${esc(log.action || log.action_type || '—')}</span></div>
+      <div class="d-row"><span class="dk">Action Detail</span><span class="dv" style="font-weight:600">${esc(actionStr)}</span></div>
       <div class="d-row"><span class="dk">Type</span><span class="dv">${esc(log.action_type || log.action || '—')}</span></div>
       <div class="d-row"><span class="dk">Risk</span><span class="dv"><span class="badge ${riskClass}">${esc(log.risk_level || '—')}</span></span></div>
       <div class="d-row"><span class="dk">Flagged</span><span class="dv">${flagged}</span></div>
@@ -1716,17 +1723,27 @@
         return;
       }
       wrap.innerHTML = `<table><thead><tr>
-    <th>Decision ID</th><th>Agent</th><th>Action</th><th>Type</th>
+    <th>Decision ID</th><th>Agent</th><th>Action Detail</th><th>Type</th>
     <th>Risk</th><th>Flagged</th><th>Latency</th><th>Time</th>
   </tr></thead><tbody>
     ${logs.map(log => {
         const rc = log.risk_level === 'high' ? 'b-high' : log.risk_level === 'medium' ? 'b-med' : 'b-low';
         const fl = log.flagged ? `<span class="badge b-high">⚠ yes</span>` : `<span class="badge b-low">✓ no</span>`;
         const ts = log.created_at ? new Date(log.created_at).toLocaleTimeString() : '—';
+        
+        let actionStr = log.ai_action_summary || log.action || log.action_type || '—';
+        if (actionStr === 'loan' || actionStr === 'loan_approval') {
+          const amt = log.inputs?.loan_amount || log.inputs?.amount || '';
+          actionStr = amt ? `Lending Transaction (₹${amt})` : 'Lending Transaction';
+        } else if (actionStr === 'transaction' || actionStr === 'approve') {
+          const amt = log.inputs?.amount;
+          if (amt) actionStr = `Payment Transaction (₹${amt})`;
+        }
+
         return `<tr onclick="openDrawer(${esc(JSON.stringify(log))})">
         <td class="mono t3">${esc((log.decision_id || '—').substring(0, 12))}…</td>
         <td style="font-weight:500">${esc(log.agent_name || log.agent_id || '—')}</td>
-        <td class="t2">${esc(log.action || log.action_type || '—')}</td>
+        <td class="t2" style="font-weight:500;color:var(--text)">${esc(actionStr)}</td>
         <td><span class="action-pill">${esc(log.action_type || log.action || '—')}</span></td>
         <td><span class="badge ${rc}">${esc(log.risk_level || '—')}</span></td>
         <td>${fl}</td>

@@ -83,6 +83,7 @@ def build_html(report: dict, api_key: str) -> str:
         verdict = str(verdict_raw)
         
     risk_bd = ss.get("risk_breakdown", {})
+    all_decisions = report.get("all_decisions", [])
     flagged_decisions = report.get("flagged_decisions", [])
     compliance_cov = report.get("compliance_coverage", {})
     violation_sum = report.get("violation_summary", {})
@@ -92,23 +93,29 @@ def build_html(report: dict, api_key: str) -> str:
     report_id = report.get("report_id", "—")
     agent_name = report.get("agent_name", "—")
     gen_at = _fmt_ts(report.get("generated_at", ""))
-
+    
     flagged_rows = ""
     for i, d in enumerate(flagged_decisions):
         flag = d.get("flag_reason") or "—"
-        inp = d.get("input") or {}
-        if isinstance(inp, str):
-            try:
-                inp = ast.literal_eval(inp)
-            except Exception:
-                inp = {}
         flagged_rows += f"""
         <tr style="background:{'#fff5f5' if i % 2 == 0 else '#fff'}">
           <td style="padding:10px 12px;font-family:monospace;font-size:11px;color:#888">{str(d.get('decision_id', '—'))[:16]}…</td>
           <td style="padding:10px 12px;font-size:12px">{_fmt_ts(d.get('timestamp'))}</td>
           <td style="padding:10px 12px">{_risk_badge(d.get('risk_level', 'low'))}</td>
-          <td style="padding:10px 12px;font-family:monospace;font-size:11px">{d.get('action_type', '—')}</td>
+          <td style="padding:10px 12px;font-family:monospace;font-size:11px">{d.get('display_action', d.get('action_type', '—'))}</td>
           <td style="padding:10px 12px;font-size:11px;color:#555;max-width:300px">{flag[:120] if flag else '—'}</td>
+        </tr>"""
+
+    all_rows = ""
+    for i, d in enumerate(all_decisions):
+        risk = d.get("risk_level", "low")
+        all_rows += f"""
+        <tr style="background:{'#f8f9fc' if i % 2 == 0 else '#fff'}">
+          <td style="padding:10px 12px;font-family:monospace;font-size:11px;color:#888">{str(d.get('decision_id', '—'))[:16]}…</td>
+          <td style="padding:10px 12px;font-size:12px">{_fmt_ts(d.get('timestamp'))}</td>
+          <td style="padding:10px 12px">{_risk_badge(risk)}</td>
+          <td style="padding:10px 12px;font-weight:500;font-size:12px;color:#1a1a2e">{d.get('display_action', d.get('action_type', '—'))}</td>
+          <td style="padding:10px 12px;font-size:11px;color:#666">{d.get('reasoning', '—')[:100]}…</td>
         </tr>"""
 
     cov_rows = ""
@@ -254,14 +261,30 @@ def build_html(report: dict, api_key: str) -> str:
           <th>Decision ID</th>
           <th>Timestamp</th>
           <th>Risk</th>
-          <th>Action Type</th>
+          <th>Action Detail</th>
           <th>Flag Reason</th>
         </tr>
       </thead>
       <tbody>{flagged_rows}</tbody>
     </table>
   </div>
-  ''' if flagged_decisions else '<div class="section"><div class="section-title">Flagged Decisions</div><div style="padding:20px;text-align:center;color:#00b894;font-size:12px;background:#f0faf7;border-radius:8px;border:1px solid #00b89433">✓ No flagged decisions — all decisions passed compliance checks</div></div>'}
+  ''' if flagged_decisions else ''}
+
+  <div class="section">
+    <div class="section-title">Full Audit Trail (All Decisions — {len(all_decisions)})</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Decision ID</th>
+          <th>Timestamp</th>
+          <th>Risk</th>
+          <th>Action Detail</th>
+          <th>Reasoning Summary</th>
+        </tr>
+      </thead>
+      <tbody>{all_rows}</tbody>
+    </table>
+  </div>
 
   {f'''
   <div class="section">
@@ -349,6 +372,7 @@ def _dao_from_log_row(l: dict) -> DAO:
         ai_escalate_to_human=l.get("ai_escalate_to_human", False),
         ai_regulatory_refs=l.get("ai_regulatory_refs") or [],
         ai_compliance_status=l.get("ai_compliance_status"),
+        ai_action_summary=l.get("ai_action_summary"),
     )
 
 
