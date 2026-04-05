@@ -29,8 +29,11 @@ def _score_color(score: int) -> str:
     return "#e53e3e"
 
 
-def _verdict_color(verdict: str) -> str:
-    v = verdict.upper()
+def _verdict_color(verdict) -> str:
+    if isinstance(verdict, dict):
+        v = str(verdict.get("message", verdict.get("status", ""))).upper()
+    else:
+        v = str(verdict).upper()
     if "NON" in v:
         return "#e53e3e"
     if "PARTIAL" in v:
@@ -73,7 +76,12 @@ def build_html(report: dict, api_key: str) -> str:
     flagged = ss.get("flagged", 0)
     clean = ss.get("clean", 0)
     score = round((clean / max(total, 1)) * 100)
-    verdict = report.get("verdict", "")
+    verdict_raw = report.get("verdict", "")
+    if isinstance(verdict_raw, dict):
+        verdict = verdict_raw.get("message", verdict_raw.get("status", str(verdict_raw)))
+    else:
+        verdict = str(verdict_raw)
+        
     risk_bd = ss.get("risk_breakdown", {})
     flagged_decisions = report.get("flagged_decisions", [])
     compliance_cov = report.get("compliance_coverage", {})
