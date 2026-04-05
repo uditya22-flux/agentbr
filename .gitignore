@@ -6,3 +6,4 @@ venv/
 storage/logs/*.json
 storage/incidents/*.json
 storage/reports/*.json
+audit_trail*.json
