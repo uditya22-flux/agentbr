@@ -454,34 +454,52 @@ tbody tr:hover{background:var(--s2)}
             </select>
           </div>
           
-          <!-- Contextual: Fraud -->
-          <div id="ml-field-fraud-amount">
-            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Transaction Amount (₹)</label>
-            <input id="ml-amount" type="number" placeholder="e.g. 75000" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;">
+          <div id="fraud-fields" style="display:contents;">
+            <div id="ml-field-fraud-amount">
+              <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Transaction Amount (₹)</label>
+              <input id="ml-amount" type="number" placeholder="e.g. 75000" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;">
+            </div>
+            <div id="pep-wrap">
+              <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Is PEP (Politically Exposed)?</label>
+              <select id="ml-pep" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;appearance:none;">
+                <option value="false">No</option>
+                <option value="true">Yes — PEP</option>
+              </select>
+            </div>
           </div>
-          <div id="ml-field-fraud-pep">
-            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Is PEP (Politically Exposed)?</label>
-            <select id="ml-pep" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;appearance:none;">
-              <option value="false">No</option>
-              <option value="true">Yes — PEP</option>
+
+          <div id="loan-fields" style="display:contents;">
+            <div id="ml-field-loan-amount" style="display:none">
+              <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Loan Amount requested (₹)</label>
+              <input id="ml-loan-amount" type="number" placeholder="e.g. 500000" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;">
+            </div>
+            <div id="ml-field-loan-credit" style="display:none">
+              <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Credit Score (300-900)</label>
+              <input id="ml-credit" type="number" placeholder="e.g. 750" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;">
+            </div>
+            <div id="ml-field-loan-income" style="display:none">
+              <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Annual Income (₹)</label>
+              <input id="ml-income" type="number" placeholder="e.g. 1200000" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;">
+            </div>
+          </div>
+
+          <div id="fraud-fields-2" style="display:none;">
+            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Transaction Type</label>
+            <select id="ml-tx-type" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;appearance:none;">
+              <option value="upi">UPI</option>
+              <option value="neft">NEFT</option>
+              <option value="rtgs">RTGS</option>
+              <option value="wire">Wire</option>
             </select>
           </div>
-
-          <!-- Contextual: Loan -->
-          <div id="ml-field-loan-amount" style="display:none">
-            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Loan Amount requested (₹)</label>
-            <input id="ml-loan-amount" type="number" placeholder="e.g. 500000" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;">
-          </div>
-          <div id="ml-field-loan-credit" style="display:none">
-            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Credit Score (300-900)</label>
-            <input id="ml-credit" type="number" placeholder="e.g. 750" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;">
-          </div>
-          <div id="ml-field-loan-income" style="display:none">
-            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Annual Income (₹)</label>
-            <input id="ml-income" type="number" placeholder="e.g. 1200000" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;">
+          <div id="loan-fields-2" style="display:none;">
+            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">DTI Ratio / Employment Years</label>
+            <div style="display:flex;gap:6px;">
+              <input id="ml-dti" type="number" step="0.01" placeholder="DTI (.28)" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none;">
+              <input id="ml-emp" type="number" placeholder="Years" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none;">
+            </div>
           </div>
 
-          <!-- Common -->
           <div>
             <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">KYC Status</label>
             <select id="ml-kyc" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;appearance:none;">
@@ -839,7 +857,6 @@ function renderStructuring(data) {
   </div>`;
 }
 
-// ── Fetch functions ──────────────────────────────────────────────
 async function fetchAll() {
   const key = getKey();
   const backend = getBackend();
@@ -883,7 +900,6 @@ async function fetchAll() {
     } else {
       toast(`✓ Loaded ${allLogs.length} logs · ${allIncidents.length} incidents`);
     }
-    document.getElementById('demoKeyDisplay').textContent = `"${key}"`;
     updatePersonaVisibility();
   } catch(e) {
     if (e.message && (e.message.includes('Failed to fetch') || e.message.includes('NetworkError'))) {
@@ -989,24 +1005,6 @@ function setQuery(el) {
   document.getElementById('queryInput').value = el.textContent;
 }
 
-async function sendDemoPayload() {
-  const key = getKey() || 'demo_key_001';
-  const backend = getBackend();
-  try {
-    await fetch(`${backend}/log`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json', 'X-API-Key': key},
-      body: JSON.stringify({
-        api_key: key, action_type: 'approve', agent_name: 'fraud-bot',
-        input: {amount: 75000, kyc_verified: false},
-        output: {confidence: 0.6}, reasoning: ''
-      })
-    });
-    toast('✓ Payload sent — refreshing in 1.5s...');
-    setTimeout(fetchAll, 1500);
-  } catch(e) { toast('Failed to send payload'); }
-}
-
 async function downloadReportJSON() {
   const key = getKey();
   const backend = getBackend();
@@ -1040,50 +1038,51 @@ function openPrintableReport() {
   window.open(`${backend}/report/html?api_key=${encodeURIComponent(key)}`, '_blank');
 }
 
-function printReport() {
-  window.print();
-}
-
-function esc(s) {
-  if (typeof s !== 'string') return String(s||'');
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-
 async function submitManualLog() {
   const key = getKey();
-  const backend = getBackend();
-  if (!key) { toast('Enter API key first'); return; }
-
-  const agent = document.getElementById('ml-agent').value.trim();
+  const agent = document.getElementById('ml-agent').value;
   const action = document.getElementById('ml-action').value;
   const confidence = parseFloat(document.getElementById('ml-confidence').value) || 0.85;
-  const kyc = document.getElementById('ml-kyc').value === 'true';
-  const reasoning = document.getElementById('ml-reasoning').value.trim();
+  const reasoning = document.getElementById('ml-reasoning').value;
+  const extraStr = document.getElementById('ml-extra').value;
+  const kycValue = document.getElementById('ml-kyc').value === 'true';
 
-  if (!agent) { toast('Agent name required'); return; }
-  if (!reasoning) { toast('Reasoning required — RBI FREE-AI Sutra 6'); return; }
-
-  let extra = {};
-  const extraRaw = document.getElementById('ml-extra').value.trim();
-  if (extraRaw) {
-    try { extra = JSON.parse(extraRaw); } catch(e) { toast('Extra fields JSON is invalid'); return; }
+  let input = {};
+  if (currentPersona === 'fraud') {
+    input = {
+      amount: parseFloat(document.getElementById('ml-amount').value) || 0,
+      transaction_type: document.getElementById('ml-tx-type').value,
+      kyc_verified: kycValue,
+      pep_status: document.getElementById('ml-pep').value === 'true',
+      sender_account: "ACC_" + Math.floor(Math.random()*10000),
+      receiver_account: "ACC_" + Math.floor(Math.random()*10000)
+    };
+  } else {
+    input = {
+      amount: parseFloat(document.getElementById('ml-loan-amount').value) || 0,
+      credit_score: parseInt(document.getElementById('ml-credit').value) || 0,
+      annual_income: parseFloat(document.getElementById('ml-income').value) || 0,
+      dti_ratio: parseFloat(document.getElementById('ml-dti').value) || 0.0,
+      employment_years: parseInt(document.getElementById('ml-emp').value) || 0,
+      kyc_verified: kycValue,
+      loan_type: "personal"
+    };
   }
 
-  const input = { kyc_verified: kyc, ...extra };
-  
-  if (currentPersona === 'fraud') {
-    input.amount = parseFloat(document.getElementById('ml-amount').value) || 0;
-    input.is_pep = document.getElementById('ml-pep').value === 'true';
-  } else {
-    input.loan_amount = parseFloat(document.getElementById('ml-loan-amount').value) || 0;
-    input.credit_score = parseFloat(document.getElementById('ml-credit').value) || 0;
-    input.annual_income = parseFloat(document.getElementById('ml-income').value) || 0;
+  try {
+    if (extraStr.trim()) {
+      const extra = JSON.parse(extraStr);
+      Object.assign(input, extra);
+    }
+  } catch(e) {
+    toast('Invalid JSON in Extra Fields');
+    return;
   }
 
   const payload = {
     api_key: key,
     agent_id: agent,
+    agent_name: currentPersona === 'fraud' ? 'fraudbot' : 'loanbot',
     action_type: action,
     reasoning: reasoning,
     confidence: confidence,
@@ -1100,10 +1099,10 @@ async function submitManualLog() {
     const res = await callApi('/decide', 'POST', payload);
     if (res.error) throw new Error(res.error);
     
-    // RENDER VERDICT
     const el = document.getElementById('ml-result');
-    const verdict = res.compliance_status || res.status || 'unknown';
-    const verdictColor = verdict.toLowerCase().includes('allow') ? 'var(--green)' : 'var(--red)';
+    const verdict = res.compliance_status || res.verdict || res.status || (res.risk_level === 'low' ? 'ALLOW' : 'REJECT') || 'UNKNOWN';
+    const isSuccess = verdict.toLowerCase().includes('allow') || verdict.toLowerCase().includes('approve') || verdict.toLowerCase().includes('clean');
+    const verdictColor = isSuccess ? 'var(--green)' : (verdict.toLowerCase().includes('reject') ? 'var(--red)' : 'var(--amber)');
     const riskColor = res.risk_level === 'high' || res.risk_level === 'critical' ? 'var(--red)' : res.risk_level === 'medium' ? 'var(--amber)' : 'var(--green)';
 
     el.style.display = 'block';
@@ -1141,69 +1140,101 @@ async function submitManualLog() {
 }
 
 function randomizeMLInputs() {
+  const kyc = document.getElementById('ml-kyc');
+  const confidence = document.getElementById('ml-confidence');
+  const reasoning = document.getElementById('ml-reasoning');
+  const action = document.getElementById('ml-action');
+
+  kyc.value = Math.random() > 0.2 ? 'true' : 'false';
+  confidence.value = (0.7 + Math.random() * 0.3).toFixed(2);
+
   if (currentPersona === 'fraud') {
-    document.getElementById('ml-amount').value = Math.floor(Math.random() * 100000);
-    document.getElementById('ml-pep').value = Math.random() > 0.8 ? 'true' : 'false';
+    const amt = Math.floor(Math.random() * 80000) + 500;
+    document.getElementById('ml-amount').value = amt;
+    document.getElementById('ml-pep').value = Math.random() > 0.9 ? 'true' : 'false';
+    document.getElementById('ml-tx-type').value = ['upi','neft','rtgs','wire'][Math.floor(Math.random()*4)];
+    
+    if (amt > 50000 && kyc.value === 'false') {
+      action.value = 'reject';
+      reasoning.value = `High value transaction (₹${amt}) detected for unverified KYC profile. Mandatory rejection per RBI rules.`;
+    } else {
+      action.value = 'approve';
+      reasoning.value = `Standard transaction within user behavioral limits. KYC Verified.`;
+    }
   } else {
-    document.getElementById('ml-loan-amount').value = Math.floor(Math.random() * 500000);
-    document.getElementById('ml-credit').value = 600 + Math.floor(Math.random() * 250);
-    document.getElementById('ml-income').value = 30000 + Math.floor(Math.random() * 70000);
+    const lamt = Math.floor(Math.random() * 1000000) + 50000;
+    const score = Math.floor(Math.random() * 500) + 350;
+    const dti = (0.1 + Math.random() * 0.5).toFixed(2);
+    
+    document.getElementById('ml-loan-amount').value = lamt;
+    document.getElementById('ml-credit').value = score;
+    document.getElementById('ml-income').value = Math.floor(lamt * (1.5 + Math.random()));
+    document.getElementById('ml-dti').value = dti;
+    document.getElementById('ml-emp').value = Math.floor(Math.random() * 15);
+
+    if (score < 650) {
+      action.value = 'reject';
+      reasoning.value = `Application rejected due to sub-prime credit score (${score}). Fails threshold for auto-approval.`;
+    } else if (parseFloat(dti) > 0.40) {
+      action.value = 'reject';
+      reasoning.value = `DTI ratio (${(dti*100).toFixed(0)}%) exceeds bank risk appetite of 40%.`;
+    } else {
+      action.value = 'loan';
+      reasoning.value = `Credit score ${score} and manageable DTI ratio. Applicant meets stability requirements.`;
+    }
   }
-  document.getElementById('ml-confidence').value = (0.5 + Math.random() * 0.5).toFixed(2);
-  document.getElementById('ml-reasoning').value = "Automated test case " + Math.floor(Math.random() * 10000);
-  toast(`🎲 Generated random ${currentPersona} data`);
+  toast(`🎲 Generated rules-based ${currentPersona} data`);
 }
 
 async function spamRandomLog() {
   randomizeMLInputs();
-  // Small delay to ensure UI updates before submission
   await new Promise(r => setTimeout(r, 50));
   await submitManualLog();
 }
 
-function setMLPreset(type) {
-  currentPersona = type;
-  const agentField = document.getElementById('ml-agent');
-  const actionField = document.getElementById('ml-action');
-  const apiKeyField = document.getElementById('apiKeyInput');
-  const demoDisp = document.getElementById('demoKeyDisplay');
-
-  // Fields to toggle
-  const fraudFields = ['ml-field-fraud-amount', 'ml-field-fraud-pep'];
-  const loanFields = ['ml-field-loan-amount', 'ml-field-loan-credit', 'ml-field-loan-income'];
-
-  if (type === 'fraud') {
-    agentField.value = 'FraudDetectorAgent';
-    actionField.value = 'approve';
-    apiKeyField.value = 'demo_key_001';
-    fraudFields.forEach(id => document.getElementById(id).style.display = 'block');
-    loanFields.forEach(id => document.getElementById(id).style.display = 'none');
-    toast('Switched to Fraudbot persona');
-  } else {
-    agentField.value = 'LoanApprovalBot';
-    actionField.value = 'loan';
-    apiKeyField.value = 'loan_key_999';
-    fraudFields.forEach(id => document.getElementById(id).style.display = 'none');
-    loanFields.forEach(id => document.getElementById(id).style.display = 'block');
-    toast('Switched to Loan Bot persona');
-  }
-  if (demoDisp) demoDisp.textContent = `"${apiKeyField.value}"`;
-  updatePersonaVisibility(true);
-}
-
-function updatePersonaVisibility(skipPreset = false) {
+function updatePersonaVisibility() {
   const key = getKey();
   const f = document.getElementById('btn-persona-fraud');
   const l = document.getElementById('btn-persona-loan');
   if (!f || !l) return;
   
   if (key === 'demo_key_001') {
-    f.style.display = 'block'; l.style.display = 'none';
-    if (!skipPreset && currentPersona !== 'fraud') setMLPreset('fraud');
+    f.style.display = 'flex';
+    l.style.display = 'none';
+    setMLPreset('fraud');
   } else if (key === 'loan_key_999') {
-    f.style.display = 'none'; l.style.display = 'block';
-    if (!skipPreset && currentPersona !== 'loan') setMLPreset('loan');
+    f.style.display = 'none';
+    l.style.display = 'flex';
+    setMLPreset('loan');
   } else {
+    f.style.display = 'none';
+    l.style.display = 'none';
+  }
+}
+
+function setMLPreset(type) {
+  currentPersona = type;
+  const agentField = document.getElementById('ml-agent');
+  const actionField = document.getElementById('ml-action');
+  
+  const f1 = document.getElementById('fraud-fields');
+  const l1 = document.getElementById('loan-fields');
+  const f2 = document.getElementById('fraud-fields-2');
+  const l2 = document.getElementById('loan-fields-2');
+  const pep = document.getElementById('pep-wrap');
+
+  if (type === 'fraud') {
+    agentField.value = 'fraudbot';
+    actionField.value = 'approve';
+    if (f1) f1.style.display = 'contents';
+    if (l1) l1.style.display = 'none';
+    if (f2) f2.style.display = 'block';
+    if (l2) l2.style.display = 'none';
+    if (pep) pep.style.display = 'block';
+    toast('Switched to FraudBot schema');
+  } else {
+    agentField.value = 'loanbot';
+    actionField.value = 'loan';
     // Other key — show both options as fallback
     f.style.display = 'block'; l.style.display = 'block';
   }
