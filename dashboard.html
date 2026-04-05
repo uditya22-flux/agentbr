@@ -498,12 +498,15 @@ tbody tr:hover{background:var(--s2)}
           <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Extra Input Fields (JSON — optional)</label>
           <textarea id="ml-extra" rows="2" placeholder='{"customer_id": "CUST_001", "risk_score": 0.3}' style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--mono);font-size:12px;color:var(--text);outline:none;resize:vertical;line-height:1.6;"></textarea>
         </div>
-        <div style="display:flex;gap:10px;margin-top:6px;">
-          <button type="button" onclick="submitManualLog()" id="ml-submit" style="flex:2;background:var(--green);color:white;border:none;border-radius:10px;padding:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:all .2s;box-shadow:0 4px 12px var(--green-b);font-family:var(--sans);">
-            <span>▶</span> Submit to Compliance Gateway
+        <div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;">
+          <button type="button" onclick="submitManualLog()" id="ml-submit" style="flex:2;min-width:200px;background:var(--green);color:white;border:none;border-radius:10px;padding:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:all .2s;box-shadow:0 4px 12px var(--green-b);font-family:var(--sans);">
+            <span>▶</span> Submit Log
           </button>
-          <button type="button" onclick="randomizeMLInputs()" id="ml-random" style="flex:1;background:var(--s2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:12px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:all .2s;font-family:var(--sans);">
-            <span>🎲</span> Randomize
+          <button type="button" onclick="spamRandomLog()" style="flex:1;min-width:120px;background:var(--purple);color:white;border:none;border-radius:10px;padding:12px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:all .2s;box-shadow:0 4px 12px var(--purple-b);font-family:var(--sans);">
+            <span>🚀</span> Spam Random
+          </button>
+          <button type="button" onclick="randomizeMLInputs()" id="ml-random" style="flex:1;min-width:120px;background:var(--s2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:12px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:all .2s;font-family:var(--sans);">
+            <span>🎲</span> Fill Fields
           </button>
         </div>
         <div id="ml-result" style="display:none;padding:14px;border-radius:8px;font-size:12px;line-height:1.7;"></div>
@@ -1115,6 +1118,27 @@ async function submitManualLog() {
     document.getElementById('ml-result').style.display = 'none';
   }
   btn.disabled = false; btn.textContent = '▶ Submit to Compliance Gateway';
+}
+
+function randomizeMLInputs() {
+  if (currentPersona === 'fraud') {
+    document.getElementById('ml-amount').value = Math.floor(Math.random() * 100000);
+    document.getElementById('ml-pep').value = Math.random() > 0.8 ? 'true' : 'false';
+  } else {
+    document.getElementById('ml-loan-amount').value = Math.floor(Math.random() * 500000);
+    document.getElementById('ml-credit').value = 600 + Math.floor(Math.random() * 250);
+    document.getElementById('ml-income').value = 30000 + Math.floor(Math.random() * 70000);
+  }
+  document.getElementById('ml-confidence').value = (0.5 + Math.random() * 0.5).toFixed(2);
+  document.getElementById('ml-reasoning').value = "Automated test case " + Math.floor(Math.random() * 10000);
+  toast(`🎲 Generated random ${currentPersona} data`);
+}
+
+async function spamRandomLog() {
+  randomizeMLInputs();
+  // Small delay to ensure UI updates before submission
+  await new Promise(r => setTimeout(r, 50));
+  await submitManualLog();
 }
 
 function setMLPreset(type) {
