@@ -1,17 +1,14 @@
 """
 gateway/decision_gateway.py
-Flow: validate → numeric risk score → policy → deterministic monitor (core_ai) → file storage → audit log.
+Flow: Multi-tenant validation → risk scoring → policy evaluation → AI monitoring → audit logging.
 """
 from datetime import datetime, timezone
-
 from models.schemas import DecisionRequest, DecisionResponse, RejectedDecision
 from validation.validator import validate
 from policy.engine import evaluate
 from risk.scorer import score, ALLOW_THRESHOLD
 from app_logging.audit_logger import write as audit_write
 from core_ai.pipeline import process as ai_process, dao_to_unified_dict
-from utils.file_manager import append_session_log, write_incident, write_session_report
-
 
 def _req_dump(req: DecisionRequest) -> dict:
     try:
@@ -19,40 +16,23 @@ def _req_dump(req: DecisionRequest) -> dict:
     except AttributeError:
         return req.dict()
 
-
 def _serialize(model) -> dict:
     if hasattr(model, "model_dump"):
         return model.model_dump()
     return model.dict()
 
-
-def _persist_monitor_artifacts(req: DecisionRequest, dao):
-    unified = dao_to_unified_dict(dao, {"decision_id": req.decision_id, "api_key": req.api_key})
-    try:
-        append_session_log(req.session_id, unified)
-        if dao.risk_level == "high":
-            write_incident(req.session_id, unified)
-        write_session_report(
-            req.session_id,
-            {
-                "session_id": req.session_id,
-                "generated_at": datetime.now(timezone.utc).isoformat(),
-                "record": unified,
-            },
-        )
-    except Exception:
-        pass
-    return unified
-
-
 def process_decision(raw: dict) -> tuple[dict, int]:
+    # raw contains org_id and agent_id from the security middleware
+    org_id = raw.get("org_id")
+    agent_id = raw.get("agent_id")
+
     is_valid, req, error = validate(raw)
     if not is_valid:
         log_hash = audit_write(
-            api_key=raw.get("api_key", "unknown"),
+            org_id=org_id,
+            agent_id=agent_id,
             decision_id=raw.get("decision_id", "unknown"),
             session_id=raw.get("session_id", "unknown"),
-            agent_id=raw.get("agent_id", "unknown"),
             user_id=raw.get("user_id", "unknown"),
             action_type=raw.get("action_type", "unknown"),
             verdict="reject",
@@ -75,8 +55,6 @@ def process_decision(raw: dict) -> tuple[dict, int]:
             decision_id=raw.get("decision_id", "unknown"),
             blocked_at="validation",
             reason=error,
-            policy_rule=None,
-            risk_score=None,
             log_hash=log_hash,
         )), 422
 
@@ -87,10 +65,10 @@ def process_decision(raw: dict) -> tuple[dict, int]:
     if blocking_violations:
         blocker = blocking_violations[0]
         log_hash = audit_write(
-            api_key=req.api_key,
+            org_id=org_id,
+            agent_id=agent_id,
             decision_id=req.decision_id,
             session_id=req.session_id,
-            agent_id=req.agent_id,
             user_id=req.user_id,
             action_type=req.action_type,
             verdict="reject",
@@ -119,9 +97,8 @@ def process_decision(raw: dict) -> tuple[dict, int]:
         )), 403
 
     monitor_raw = _req_dump(req)
-    monitor_raw["output"] = {**monitor_raw.get("output", {}), "confidence": req.confidence}
+    # The monitor pipeline might not know about org_id, let's inject it if needed
     dao = ai_process(monitor_raw)
-    unified = _persist_monitor_artifacts(req, dao)
 
     final_verdict = policy_verdict
     if risk_score >= ALLOW_THRESHOLD and final_verdict == "allow":
@@ -130,10 +107,10 @@ def process_decision(raw: dict) -> tuple[dict, int]:
         final_verdict = "review"
 
     log_hash = audit_write(
-        api_key=req.api_key,
+        org_id=org_id,
+        agent_id=agent_id,
         decision_id=req.decision_id,
         session_id=req.session_id,
-        agent_id=req.agent_id,
         user_id=req.user_id,
         action_type=req.action_type,
         verdict=final_verdict,
@@ -166,5 +143,4 @@ def process_decision(raw: dict) -> tuple[dict, int]:
         escalate_to_human=dao.ai_escalate_to_human,
         log_hash=log_hash,
         message=f"Decision {final_verdict.upper()} — logged and audited",
-        monitor=unified,
     )), http_code

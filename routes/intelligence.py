@@ -1,56 +1,54 @@
 """
-Intelligence endpoints — all query audit_logs (v5 table).
-POST /query   — plain English compliance question
-GET  /drift   — behavioral drift this week vs last week
-GET  /structuring — cross-session structuring pattern detection
+routes/intelligence.py
+Multi-tenant Intelligence Hub:
+- Scoped Analytics & Analytics Breakdown
+- Natural Language Query (NLQ) over logs per organization
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from database import supabase
 from core_ai.nl_query import query_logs
 from core_ai.behavioral_drift import detect_drift
 from core_ai.structuring_detector import detect_structuring
 
-router = APIRouter()
+router = APIRouter(prefix="/api/intelligence", tags=["Intelligence HUB"])
 
-def _get_logs(api_key: str, limit: int = 200):
-    """Always reads from audit_logs — the v5 immutable table."""
+def _get_org_logs(org_id: str, limit: int = 500):
+    """Fetch logs scoped by organization."""
     result = supabase.table("audit_logs")\
         .select("*")\
-        .eq("api_key", api_key)\
+        .eq("org_id", org_id)\
         .order("created_at", desc=True)\
         .limit(limit)\
         .execute()
     return result.data
 
 @router.post("/query")
-async def natural_language_query(data: dict):
-    """
-    Ask AgentBridge anything about your audit logs.
-    Body: { "api_key": "...", "question": "Did my agent show bias this week?" }
-    """
-    api_key = data.get("api_key")
+async def natural_language_query(request: Request, data: dict):
+    """Ask AgentBridge anything about your organizational compliance data."""
+    org_id = getattr(request.state, "org_id", None)
     question = data.get("question")
-    if not api_key or not question:
-        raise HTTPException(status_code=400, detail="api_key and question required")
-    logs = _get_logs(api_key)
+    if not question:
+        raise HTTPException(status_code=400, detail="question required")
+    
+    logs = _get_org_logs(org_id)
     answer = query_logs(question, logs)
-    return {"question": question, "answer": answer, "logs_analyzed": len(logs)}
+    return {
+        "question": question, 
+        "answer": answer, 
+        "logs_analyzed": len(logs),
+        "source_logs": logs[:5] # Return top 5 most relevant or recent
+    }
 
 @router.get("/drift")
-async def behavioral_drift(api_key: str):
-    """Week-on-week behavioral comparison from audit_logs."""
-    if not api_key:
-        raise HTTPException(status_code=400, detail="api_key required")
-    logs = _get_logs(api_key, limit=500)
+async def behavioral_drift(request: Request):
+    """Week-on-week behavioral comparison from audit_logs for organization."""
+    org_id = getattr(request.state, "org_id", None)
+    logs = _get_org_logs(org_id, limit=500)
     return detect_drift(logs)
 
 @router.get("/structuring")
-async def structuring_detection(api_key: str):
-    """Detect ₹50K threshold structuring patterns in audit_logs."""
-    if not api_key:
-        raise HTTPException(status_code=400, detail="api_key required")
-    logs = _get_logs(api_key, limit=200)
-    result = detect_structuring(logs)
-    if not result:
-        return {"status": "clean", "message": "No structuring patterns detected."}
-    return result
+async def structuring_detection(request: Request):
+    """Detect ₹50K threshold structuring patterns in organization's audit_logs."""
+    org_id = getattr(request.state, "org_id", None)
+    logs = _get_org_logs(org_id, limit=200)
+    return detect_structuring(logs)

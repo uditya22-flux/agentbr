@@ -1,23 +1,21 @@
 """
 logging/audit_logger.py
-Immutable hash-chained audit log.
-Every log entry contains SHA256 of (current_record + previous_hash).
-Chain can be verified at any time — tampering breaks the chain.
+Immutable hash-chained audit log for B2B SaaS.
+Every log entry contains SHA256 of (current_record + previous_hash) scoped by org_id.
 """
 import hashlib
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from database import supabase
 
-
-def _get_last_hash(api_key: str) -> str:
-    """Fetch the most recent log_hash for this api_key to continue the chain."""
+def _get_last_hash(org_id: str) -> str:
+    """Fetch the most recent log_hash for this organization to continue the chain."""
     try:
         result = supabase.table("audit_logs")\
             .select("log_hash")\
-            .eq("api_key", api_key)\
+            .eq("org_id", org_id)\
             .order("created_at", desc=True)\
             .limit(1)\
             .execute()
@@ -25,21 +23,19 @@ def _get_last_hash(api_key: str) -> str:
             return result.data[0]["log_hash"]
     except Exception:
         pass
-    return "GENESIS"  # First entry in chain
-
+    return "GENESIS"
 
 def _compute_hash(record: dict, previous_hash: str) -> str:
     """SHA256(canonical_json(record) + previous_hash)"""
     canonical = json.dumps(record, sort_keys=True, default=str)
-    raw = canonical + previous_hash
+    raw = canonical + (previous_hash or "GENESIS")
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
-
 def write(
-    api_key: str,
+    org_id: str,
+    agent_id: str,
     decision_id: str,
     session_id: str,
-    agent_id: str,
     user_id: str,
     action_type: str,
     verdict: str,
@@ -60,13 +56,15 @@ def write(
 ) -> str:
     """
     Writes one immutable log entry. Returns the log_hash.
+    Also creates an entry in the 'incidents' table if flagged.
     """
-    previous_hash = _get_last_hash(api_key)
+    previous_hash = _get_last_hash(org_id)
 
     record = {
+        "org_id": org_id,
+        "agent_id": agent_id,
         "decision_id": decision_id,
         "session_id": session_id,
-        "agent_id": agent_id,
         "user_id": user_id,
         "action_type": action_type,
         "verdict": verdict,
@@ -76,16 +74,15 @@ def write(
         "compliance_violations": compliance_violations,
         "reasoning": reasoning,
         "confidence": confidence,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
     log_hash = _compute_hash(record, previous_hash)
 
     entry = {
         **record,
-        "api_key": api_key,
-        "inputs": json.dumps(input_data)[:5000],
-        "output": json.dumps(output_data)[:5000],
+        "inputs": input_data, # JSONB in SQL
+        "output": json.dumps(output_data),
         "ai_explanation": ai_explanation,
         "ai_recommended_action": ai_recommended_action,
         "ai_escalate_to_human": ai_escalate_to_human,
@@ -94,50 +91,32 @@ def write(
         "ai_action_summary": ai_action_summary,
         "previous_hash": previous_hash,
         "log_hash": log_hash,
-        "flagged": verdict in ("reject", "review"),
+        "flagged": verdict in ("reject", "review") or ai_escalate_to_human,
     }
 
     try:
-        supabase.table("audit_logs").insert(entry).execute()
+        res = supabase.table("audit_logs").insert(entry).execute()
+        
+        # Increment agent total_logs
+        supabase.rpc("increment_agent_logs", {"agent_id": agent_id}).execute()
+
+        # Create incident if flagged
+        if entry["flagged"]:
+            log_id = res.data[0]["id"]
+            severity = "high" if verdict == "reject" else "medium"
+            rule_triggered = (policy_violations[0] if policy_violations else 
+                             (compliance_violations[0] if compliance_violations else "Anomaly detected"))
+            
+            supabase.table("incidents").insert({
+                "org_id": org_id,
+                "agent_id": agent_id,
+                "log_id": log_id,
+                "severity": severity,
+                "rule_triggered": rule_triggered,
+                "status": "open"
+            }).execute()
+
     except Exception as e:
         print(f"[audit_logger] CRITICAL: Failed to write audit log: {e}")
 
     return log_hash
-
-
-def verify_chain(api_key: str) -> dict:
-    """
-    Verify the hash chain for an api_key.
-    Returns {valid: bool, broken_at: decision_id|None, total_checked: int}
-    """
-    try:
-        result = supabase.table("audit_logs")\
-            .select("*")\
-            .eq("api_key", api_key)\
-            .order("created_at", desc=False)\
-            .execute()
-        logs = result.data or []
-    except Exception as e:
-        return {"valid": False, "error": str(e), "total_checked": 0}
-
-    if not logs:
-        return {"valid": True, "total_checked": 0}
-
-    prev_hash = "GENESIS"
-    for log in logs:
-        record = {k: log[k] for k in [
-            "decision_id", "session_id", "agent_id", "user_id",
-            "action_type", "verdict", "risk_score", "risk_level",
-            "policy_violations", "compliance_violations",
-            "reasoning", "confidence", "timestamp"
-        ]}
-        expected = _compute_hash(record, prev_hash)
-        if expected != log["log_hash"]:
-            return {
-                "valid": False,
-                "broken_at": log["decision_id"],
-                "total_checked": logs.index(log) + 1,
-            }
-        prev_hash = log["log_hash"]
-
-    return {"valid": True, "total_checked": len(logs)}

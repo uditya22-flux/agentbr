@@ -1,61 +1,71 @@
 """
-AgentBridge v5 — Decision Gateway
-All decisions flow through POST /decide. No bypass possible.
+AgentBridge v6 — Full B2B SaaS Platform
+Multi-tenant AI compliance monitoring & enforcement.
 """
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Response, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
 
 app = FastAPI(
-    title="AgentBridge Compliance Gateway",
-    version="5.0.0",
-    description="Mandatory AI decision enforcement gateway for fintech compliance",
+    title="AgentBridge B2B SaaS",
+    version="6.0.0",
+    description="RBI FREE-AI Compliance Platform for Multi-tenant AI Monitoring",
 )
 
-# CORS — open for SDK + dashboard cross-origin calls
+# CORS config
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Auth + rate limit middleware
+# Auth context and middleware
 from gateway.security import auth_middleware
 app.middleware("http")(auth_middleware)
 
-# Routers
-from routes.gateway_routes import router as gateway_router
-from routes.audit_routes import router as audit_router
+# --- ROUTERS ---
+from routes.auth_routes import router as auth_router
+from routes.agent_management import router as agent_router
+from routes.dashboard_stats import router as dashboard_router
+from routes.gateway_routes import router as sdk_gateway_router
 from routes.intelligence import router as intelligence_router
+from routes.settings_routes import router as settings_router
 from routes.manual_log import router as manual_router
-from routes.report_html import router as report_html_router
-from api.routes import router as disk_download_router
+from routes.report_routes import router as report_router
 
-app.include_router(gateway_router)
-app.include_router(audit_router)
+app.include_router(auth_router)
+app.include_router(agent_router)
+app.include_router(dashboard_router)
+app.include_router(sdk_gateway_router)
 app.include_router(intelligence_router)
+app.include_router(settings_router)
 app.include_router(manual_router)
-app.include_router(report_html_router)
-app.include_router(disk_download_router)
+app.include_router(report_router)
 
-@app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
-def root():
-    return FileResponse("dashboard.html")
+# Serve Frontend
+@app.get("/", include_in_schema=False)
+async def serve_index():
+    return FileResponse("index.html")
+
+@app.get("/{page}.html", include_in_schema=False)
+async def serve_static_page(page: str):
+    path = f"{page}.html"
+    if os.path.exists(path):
+        return FileResponse(path)
+    return JSONResponse(status_code=404, content={"detail": "Page not found"})
 
 @app.get("/health")
 def health():
-    has_supabase = bool(os.environ.get("SUPABASE_URL") and os.environ.get("SUPABASE_KEY"))
     return {
-        "status": "AgentBridge Gateway running",
-        "version": "5.0.0",
-        "mode": "enforcement",
-        "database": "configured" if has_supabase else "set SUPABASE_URL and SUPABASE_KEY",
-        "worker_llm": "gemini_configured" if os.environ.get("GEMINI_API_KEY") else "set GEMINI_API_KEY for WorkerAgent",
+        "status": "online",
+        "platform": "AgentBridge v6",
+        "tenancy": "multi-tenant enabled"
     }
 
 @app.get("/favicon.ico", include_in_schema=False)

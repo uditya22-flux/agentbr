@@ -1,79 +1,56 @@
 """
 routes/gateway_routes.py
-Single entry point: POST /decide
-This is the ONLY way to submit a decision.
-The old /log endpoint is kept for backward compat but now calls gateway.
+Multi-tenant SDK endpoints for AI agents.
 """
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import JSONResponse
 from gateway.decision_gateway import process_decision
+from database import supabase
 
-router = APIRouter()
-
+router = APIRouter(tags=["SDK Gateway"])
 
 @router.post("/decide")
 async def decide(request: Request):
     """
-    MAIN GATEWAY ENDPOINT.
-    Submit a decision for compliance enforcement before execution.
-    
-    Returns:
-        200 — allow (decision cleared)
-        202 — review (proceed with caution, human review required)
-        403 — reject (decision blocked by policy)
-        422 — validation failure
-    """
-    try:
-        raw = await request.json()
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid JSON in request body")
-
-    # Inject api_key from header if not in body
-    api_key = request.headers.get("X-API-Key") or raw.get("api_key", "")
-    raw["api_key"] = api_key
-
-    response_data, status_code = process_decision(raw)
-    return JSONResponse(content=response_data, status_code=status_code)
-
-
-@router.post("/log")
-async def legacy_log(request: Request):
-    """
-    Backward-compatible endpoint for existing SDK.
-    Now routes through the full gateway pipeline.
+    MAIN GATEWAY ENDPOINT for SDK.
+    Requires X-API-Key. org_id and agent_id are injected by security middleware.
     """
     try:
         raw = await request.json()
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid JSON")
 
-    api_key = request.headers.get("X-API-Key") or raw.get("api_key", "")
-    raw["api_key"] = api_key
+    # Access context from middleware
+    org_id = getattr(request.state, "org_id", None)
+    agent_id = getattr(request.state, "agent_id", None)
+    
+    if not org_id or not agent_id:
+        raise HTTPException(status_code=401, detail="Agent identification failed")
 
-    # Map legacy fields to gateway schema
-    if "action" in raw and "action_type" not in raw:
-        raw["action_type"] = raw.pop("action")
-    if "inputs" in raw and "input" not in raw:
-        raw["input"] = raw.pop("inputs") if isinstance(raw["inputs"], dict) else {}
-    if "agent_name" in raw and "agent_id" not in raw:
-        raw["agent_id"] = raw.pop("agent_name")
-    if "user_id" not in raw:
-        raw["user_id"] = "legacy_sdk_user"
-    if "session_id" not in raw:
-        raw["session_id"] = "legacy_session"
+    # Add context to the record
+    raw["org_id"] = org_id
+    raw["agent_id"] = agent_id
 
+    # Call the decision processor
     response_data, status_code = process_decision(raw)
     return JSONResponse(content=response_data, status_code=status_code)
 
+@router.post("/log")
+async def legacy_log(request: Request):
+    """SDK log endpoint, redirected to gateway."""
+    return await decide(request)
 
-@router.get("/logs")
-async def get_logs(api_key: str, limit: int = 50, request: Request = None):
-    """Retrieve audit logs for a given api_key."""
-    from database import supabase
-    result = supabase.table("audit_logs")\
-        .select("*")\
-        .eq("api_key", api_key)\
-        .order("created_at", desc=True)\
-        .limit(limit)\
-        .execute()
-    return result.data
+# Moves dashboard logs to /api/logs
+@router.get("/api/logs")
+async def get_dashboard_logs(request: Request, agent_id: str = None, limit: int = 50):
+    """Dashboard endpoint to fetch logs for the logged-in company."""
+    org_id = getattr(request.state, "org_id", None)
+    if not org_id:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    query = supabase.table("audit_logs").select("*").eq("org_id", org_id)
+    if agent_id and agent_id != "all":
+        query = query.eq("agent_id", agent_id)
+    
+    res = query.order("created_at", desc=True).limit(limit).execute()
+    return res.data

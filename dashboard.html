@@ -1,2249 +1,684 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AgentBridge — Compliance Dashboard</title>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500&family=Geist:wght@300;400;500;600&display=swap"
-    rel="stylesheet">
-  <style>
-    :root {
-      --bg: #f7f8fa;
-      --surface: #fff;
-      --s2: #f2f4f7;
-      --s3: #e8ecf2;
-      --border: #e2e6ed;
-      --border2: #d0d6e0;
-      --text: #0f1420;
-      --t2: #4a5568;
-      --t3: #8896b0;
-      --t4: #b8c4d4;
-      --teal: #00b894;
-      --teal-l: #e6f9f5;
-      --teal-b: rgba(0, 184, 148, 0.15);
-      --red: #e53e3e;
-      --red-l: #fff5f5;
-      --red-b: rgba(229, 62, 62, 0.12);
-      --amber: #d97706;
-      --amber-l: #fffbeb;
-      --amber-b: rgba(217, 119, 6, 0.12);
-      --blue: #3b82f6;
-      --blue-l: #eff6ff;
-      --blue-b: rgba(59, 130, 246, 0.12);
-      --purple: #7c3aed;
-      --purple-l: #f5f3ff;
-      --purple-b: rgba(124, 58, 237, 0.1);
-      --green: #27ae60;
-      --green-l: #ebfaf0;
-      --green-b: rgba(39, 174, 96, 0.15);
-      --mono: 'Geist Mono', monospace;
-      --sans: 'Geist', sans-serif;
-      --radius: 10px;
-      --shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-      --shadow2: 0 4px 16px rgba(0, 0, 0, 0.08);
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0
-    }
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--sans);
-      font-size: 13px;
-      min-height: 100vh
-    }
-
-    nav {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 0 28px;
-      height: 52px;
-      display: flex;
-      align-items: center;
-      gap: 24px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      box-shadow: var(--shadow)
-    }
-
-    .nav-logo {
-      font-weight: 600;
-      font-size: 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0
-    }
-
-    .nav-logo-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--teal)
-    }
-
-    .nav-tabs {
-      display: flex;
-      gap: 2px
-    }
-
-    .nav-tab {
-      padding: 6px 14px;
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--t3);
-      border-radius: 7px;
-      cursor: pointer;
-      transition: all .12s;
-      border: none;
-      background: none;
-      font-family: var(--sans)
-    }
-
-    .nav-tab:hover {
-      color: var(--text);
-      background: var(--s2)
-    }
-
-    .nav-tab.active {
-      color: var(--text);
-      background: var(--s2)
-    }
-
-    .nav-right {
-      margin-left: auto;
-      display: flex;
-      align-items: center;
-      gap: 10px
-    }
-
-    .api-input-wrap {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--s2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 5px 10px
-    }
-
-    .api-label {
-      font-size: 10px;
-      color: var(--t3);
-      font-family: var(--mono)
-    }
-
-    .api-field {
-      background: none;
-      border: none;
-      outline: none;
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--text);
-      width: 160px
-    }
-
-    .fetch-btn {
-      background: var(--text);
-      color: #fff;
-      border: none;
-      border-radius: 7px;
-      padding: 7px 14px;
-      font-size: 12px;
-      font-weight: 500;
-      cursor: pointer;
-      font-family: var(--sans);
-      transition: all .15s;
-      display: flex;
-      align-items: center;
-      gap: 5px
-    }
-
-    .fetch-btn:hover {
-      background: #1a2035
-    }
-
-    .fetch-btn:disabled {
-      background: var(--s3);
-      color: var(--t3);
-      cursor: not-allowed
-    }
-
-    .live-badge {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 11px;
-      color: var(--t3)
-    }
-
-    .live-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--teal);
-      animation: pulse 2s infinite
-    }
-
-    @keyframes pulse {
-
-      0%,
-      100% {
-        opacity: 1
-      }
-
-      50% {
-        opacity: .3
-      }
-    }
-
-    .page {
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 24px 28px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px
-    }
-
-    .section-hdr {
-      display: flex;
-      align-items: baseline;
-      gap: 10px;
-      margin-bottom: 12px
-    }
-
-    .section-title {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text)
-    }
-
-    .section-sub {
-      font-size: 11px;
-      color: var(--t3)
-    }
-
-    .stats-row {
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 10px
-    }
-
-    .stat-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px 16px
-    }
-
-    .stat-label {
-      font-size: 10px;
-      color: var(--t3);
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-      margin-bottom: 6px
-    }
-
-    .stat-val {
-      font-size: 22px;
-      font-weight: 600;
-      color: var(--text);
-      font-family: var(--mono)
-    }
-
-    .stat-sub {
-      font-size: 10px;
-      color: var(--t3);
-      margin-top: 3px
-    }
-
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px
-    }
-
-    .grid-3 {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 12px
-    }
-
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden
-    }
-
-    .card-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--border)
-    }
-
-    .card-title {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text)
-    }
-
-    .card-count {
-      font-size: 11px;
-      color: var(--t3);
-      font-family: var(--mono)
-    }
-
-    .card-action {
-      font-size: 11px;
-      color: var(--teal);
-      cursor: pointer;
-      font-weight: 500
-    }
-
-    .card-action:hover {
-      text-decoration: underline
-    }
-
-    .endpoint {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      background: var(--s2);
-      border: 1px solid var(--border);
-      border-radius: 5px;
-      padding: 2px 7px;
-      font-family: var(--mono);
-      font-size: 10px;
-      color: var(--t2)
-    }
-
-    .ep-method {
-      font-weight: 600;
-      color: var(--teal)
-    }
-
-    .ep-post .ep-method {
-      color: var(--blue)
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse
-    }
-
-    thead tr {
-      background: var(--s2)
-    }
-
-    th {
-      padding: 9px 12px;
-      font-size: 10px;
-      font-weight: 600;
-      color: var(--t3);
-      text-align: left;
-      text-transform: uppercase;
-      letter-spacing: .04em;
-      border-bottom: 1px solid var(--border)
-    }
-
-    td {
-      padding: 10px 12px;
-      font-size: 12px;
-      color: var(--t2);
-      border-bottom: 1px solid var(--border);
-      vertical-align: middle
-    }
-
-    tr:last-child td {
-      border-bottom: none
-    }
-
-    tbody tr {
-      cursor: pointer;
-      transition: background .1s
-    }
-
-    tbody tr:hover {
-      background: var(--s2)
-    }
-
-    .mono {
-      font-family: var(--mono)
-    }
-
-    .t3 {
-      color: var(--t3)
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-      padding: 2px 7px;
-      border-radius: 4px;
-      font-size: 10px;
-      font-weight: 600;
-      font-family: var(--mono)
-    }
-
-    .b-high {
-      background: var(--red-l);
-      color: var(--red);
-      border: 1px solid var(--red-b)
-    }
-
-    .b-med {
-      background: var(--amber-l);
-      color: var(--amber);
-      border: 1px solid var(--amber-b)
-    }
-
-    .b-low {
-      background: var(--teal-l);
-      color: var(--teal);
-      border: 1px solid var(--teal-b)
-    }
-
-    .b-blue {
-      background: var(--blue-l);
-      color: var(--blue);
-      border: 1px solid var(--blue-b)
-    }
-
-    .b-purple {
-      background: var(--purple-l);
-      color: var(--purple);
-      border: 1px solid var(--purple-b)
-    }
-
-    .action-pill {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 10px;
-      font-family: var(--mono);
-      background: var(--s2);
-      color: var(--t2);
-      border: 1px solid var(--border)
-    }
-
-    .empty-box {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 48px;
-      gap: 10px
-    }
-
-    .empty-icon {
-      font-size: 28px;
-      opacity: .4
-    }
-
-    .empty-text {
-      font-size: 12px;
-      color: var(--t3)
-    }
-
-    .tab-content {
-      display: none
-    }
-
-    .tab-content.active {
-      display: flex;
-      flex-direction: column;
-      gap: 20px
-    }
-
-    /* Drawer */
-    .drawer-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.18);
-      z-index: 200;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity .2s
-    }
-
-    .drawer-overlay.open {
-      opacity: 1;
-      pointer-events: all
-    }
-
-    .drawer {
-      position: fixed;
-      right: 0;
-      top: 0;
-      bottom: 0;
-      width: 420px;
-      background: var(--surface);
-      border-left: 1px solid var(--border);
-      z-index: 201;
-      transform: translateX(100%);
-      transition: transform .22s cubic-bezier(.4, 0, .2, 1);
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column
-    }
-
-    .drawer.open {
-      transform: translateX(0)
-    }
-
-    .drawer-hdr {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 16px 18px;
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
-      background: var(--surface);
-      z-index: 1
-    }
-
-    .drawer-title {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text)
-    }
-
-    .drawer-id {
-      font-size: 10px;
-      color: var(--t3);
-      font-family: var(--mono)
-    }
-
-    .drawer-close {
-      background: none;
-      border: none;
-      color: var(--t3);
-      cursor: pointer;
-      font-size: 18px;
-      padding: 4px;
-      line-height: 1
-    }
-
-    .drawer-body {
-      padding: 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      flex: 1
-    }
-
-    .d-section-title {
-      font-size: 10px;
-      font-weight: 600;
-      color: var(--t3);
-      text-transform: uppercase;
-      letter-spacing: .08em;
-      margin-bottom: 8px
-    }
-
-    .d-kv {
-      display: flex;
-      flex-direction: column;
-      gap: 6px
-    }
-
-    .d-row {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 12px
-    }
-
-    .dk {
-      font-size: 11px;
-      color: var(--t3);
-      flex-shrink: 0
-    }
-
-    .dv {
-      font-size: 12px;
-      color: var(--text);
-      font-family: var(--mono);
-      text-align: right;
-      word-break: break-all
-    }
-
-    .d-json {
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--t2);
-      background: var(--s2);
-      border: 1px solid var(--border);
-      border-radius: 7px;
-      padding: 10px;
-      white-space: pre-wrap;
-      word-break: break-all;
-      max-height: 160px;
-      overflow-y: auto
-    }
-
-    .violations-list {
-      display: flex;
-      flex-direction: column;
-      gap: 5px
-    }
-
-    .viol-item {
-      font-size: 11px;
-      padding: 7px 10px;
-      border-radius: 6px;
-      line-height: 1.5
-    }
-
-    .vi-high {
-      background: var(--red-l);
-      color: var(--red);
-      border: 1px solid var(--red-b)
-    }
-
-    .vi-med {
-      background: var(--amber-l);
-      color: var(--amber);
-      border: 1px solid var(--amber-b)
-    }
-
-    /* Toast */
-    .toast {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%) translateY(12px);
-      background: var(--text);
-      color: #fff;
-      padding: 9px 18px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 500;
-      opacity: 0;
-      pointer-events: none;
-      transition: all .2s;
-      z-index: 999;
-      white-space: nowrap
-    }
-
-    .toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0)
-    }
-
-    /* Intelligence tab specific */
-    .intel-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px
-    }
-
-    .drift-stat {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 0;
-      border-bottom: 1px solid var(--border)
-    }
-
-    .drift-stat:last-child {
-      border-bottom: none
-    }
-
-    .drift-key {
-      font-size: 12px;
-      color: var(--t2)
-    }
-
-    .drift-vals {
-      display: flex;
-      gap: 16px
-    }
-
-    .drift-val {
-      text-align: right
-    }
-
-    .drift-val .label {
-      font-size: 9px;
-      color: var(--t3);
-      text-transform: uppercase
-    }
-
-    .drift-val .num {
-      font-size: 13px;
-      font-weight: 600;
-      font-family: var(--mono)
-    }
-
-    .finding-item {
-      padding: 10px 12px;
-      border-radius: 7px;
-      font-size: 12px;
-      line-height: 1.5;
-      margin-bottom: 6px
-    }
-
-    /* NL Query */
-    .query-wrap {
-      padding: 16px
-    }
-
-    .query-input-row {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 12px
-    }
-
-    .query-input {
-      flex: 1;
-      background: var(--s2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 9px 12px;
-      font-family: var(--sans);
-      font-size: 13px;
-      color: var(--text);
-      outline: none;
-      transition: border-color .15s
-    }
-
-    .query-input:focus {
-      border-color: var(--teal)
-    }
-
-    .query-btn {
-      background: var(--teal);
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 9px 18px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: var(--sans);
-      white-space: nowrap;
-      transition: background .15s
-    }
-
-    .query-btn:hover {
-      background: #00a381
-    }
-
-    .query-btn:disabled {
-      background: var(--s3);
-      color: var(--t3);
-      cursor: not-allowed
-    }
-
-    .query-answer {
-      background: var(--s2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 14px;
-      font-size: 13px;
-      color: var(--text);
-      line-height: 1.7;
-      min-height: 80px;
-      display: none
-    }
-
-    .query-answer.visible {
-      display: block
-    }
-
-    .query-suggestions {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      margin-bottom: 10px
-    }
-
-    .query-chip {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 4px 12px;
-      font-size: 11px;
-      color: var(--t2);
-      cursor: pointer;
-      transition: all .12s
-    }
-
-    .query-chip:hover {
-      border-color: var(--teal);
-      color: var(--teal)
-    }
-
-    /* Structuring */
-    .struct-clean {
-      padding: 16px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: var(--teal);
-      font-size: 12px
-    }
-
-    .struct-alert {
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px
-    }
-
-    .struct-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--red-l);
-      border: 1px solid var(--red-b);
-      color: var(--red);
-      border-radius: 6px;
-      padding: 6px 12px;
-      font-size: 12px;
-      font-weight: 600;
-      width: fit-content
-    }
-
-    .struct-desc {
-      font-size: 12px;
-      color: var(--t2);
-      line-height: 1.6;
-      padding: 10px;
-      background: var(--s2);
-      border-radius: 7px;
-      border: 1px solid var(--border)
-    }
-
-    .struct-ref {
-      font-size: 11px;
-      color: var(--t3);
-      font-family: var(--mono)
-    }
-
-    /* Rules engine */
-    .an-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 11px 16px;
-      border-bottom: 1px solid var(--border)
-    }
-
-    .an-row:last-child {
-      border-bottom: none
-    }
-
-    .an-num {
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--t4);
-      flex-shrink: 0;
-      width: 24px
-    }
-
-    .an-body {
-      flex: 1
-    }
-
-    .an-name {
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--text);
-      margin-bottom: 2px
-    }
-
-    .an-desc {
-      font-size: 11px;
-      color: var(--t3)
-    }
-
-    .an-sev {
-      flex-shrink: 0
-    }
-
-    .rbi-list {
-      padding: 4px 0
-    }
-
-    .rbi-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 16px;
-      border-bottom: 1px solid var(--border)
-    }
-
-    .rbi-row:last-child {
-      border-bottom: none
-    }
-
-    .rbi-ico {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 10px;
-      font-weight: 700;
-      flex-shrink: 0
-    }
-
-    .ri-pass {
-      background: var(--teal-l);
-      color: var(--teal)
-    }
-
-    .ri-fail {
-      background: var(--red-l);
-      color: var(--red)
-    }
-
-    .rbi-info {
-      flex: 1
-    }
-
-    .rbi-clause {
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--text)
-    }
-
-    .rbi-desc {
-      font-size: 11px;
-      color: var(--t3);
-      margin-top: 1px
-    }
-
-    .rbi-status {
-      font-size: 10px;
-      font-family: var(--mono);
-      font-weight: 600;
-      flex-shrink: 0
-    }
-
-    .rs-ok {
-      color: var(--teal)
-    }
-
-    .rs-bad {
-      color: var(--red)
-    }
-
-    /* Demo payload */
-    .payload-box {
-      font-family: var(--mono);
-      font-size: 11px;
-      background: var(--s2);
-      padding: 12px 16px;
-      color: var(--t2);
-      line-height: 1.8;
-      border-bottom: 1px solid var(--border)
-    }
-
-    .pj-key {
-      color: var(--blue)
-    }
-
-    .pj-str {
-      color: var(--teal)
-    }
-
-    .pj-num {
-      color: var(--purple)
-    }
-
-    .send-payload-btn {
-      margin: 12px 16px;
-      background: var(--blue);
-      color: #fff;
-      border: none;
-      border-radius: 7px;
-      padding: 8px 16px;
-      font-size: 12px;
-      font-weight: 500;
-      cursor: pointer;
-      font-family: var(--sans);
-      transition: background .15s
-    }
-
-    .send-payload-btn:hover {
-      background: #2563eb
-    }
-
-    /* Report */
-    .report-meta {
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      border-bottom: 1px solid var(--border)
-    }
-
-    .report-meta-row {
-      display: flex;
-      justify-content: space-between;
-      font-size: 12px
-    }
-
-    .report-meta-key {
-      color: var(--t3)
-    }
-
-    .report-meta-val {
-      color: var(--text);
-      font-family: var(--mono);
-      font-weight: 500
-    }
-
-    #reportContent {
-      min-height: 120px
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgentBridge | Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #080a11; color: #e1e7ef; overflow-x: hidden; }
+        .outfit { font-family: 'Outfit', sans-serif; }
+        .sidebar { background: rgba(13, 17, 27, 0.95); backdrop-filter: blur(20px); border-right: 1px solid rgba(255, 255, 255, 0.05); }
+        .card { background: rgba(22, 27, 38, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 1.5rem; }
+        .card:hover { border-color: rgba(66, 153, 225, 0.3); box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5); }
+        .nav-link { transition: all 0.2s; border-radius: 0.75rem; }
+        .nav-link.active { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2); }
+        .nav-link:not(.active):hover { background: rgba(255, 255, 255, 0.03); }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 10px; }
+        .gradient-border-item { position: relative; }
+        .gradient-border-item::after { content: ''; position: absolute; inset: 0; padding: 1px; border-radius: inherit; background: linear-gradient(45deg, rgba(59, 130, 246, 0.3), transparent); -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; }
+        .badge-pulse { position: relative; }
+        .badge-pulse::after { content: ''; position: absolute; inset: -4px; border-radius: 99px; background: currentColor; opacity: 0.4; animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.4; } 50% { transform: scale(1.5); opacity: 0; } }
+    </style>
 </head>
-
-<body>
-
-  <nav>
-    <div class="nav-logo">
-      <div class="nav-logo-dot"></div>AgentBridge
-    </div>
-    <div class="nav-tabs">
-      <button class="nav-tab active" onclick="switchTab('logs')">Logs</button>
-      <button class="nav-tab" onclick="switchTab('incidents')">Incidents</button>
-      <button class="nav-tab" onclick="switchTab('report')">RBI Report</button>
-      <button class="nav-tab" onclick="switchTab('intelligence')">Intelligence</button>
-      <button class="nav-tab" onclick="switchTab('rules')">Rules Engine</button>
-      <button class="nav-tab" onclick="switchTab('manual')">⌨ Manual Log</button>
-    </div>
-    <div class="nav-right">
-      <div class="api-input-wrap">
-        <span class="api-label">api_key</span>
-        <input class="api-field" id="apiKeyInput" placeholder="enter your api key" value="demo_key_001">
-      </div>
-      <div class="api-input-wrap" style="width:220px">
-        <span class="api-label">backend</span>
-        <input class="api-field" id="backendInput" placeholder="https://app.onrender.com" style="width:220px" value=""
-          autocomplete="off" title="Use full URL including .onrender.com">
-      </div>
-      <button onclick="fetchAll()" id="fetchBtn" class="fetch-btn">
-        <span id="fetchIcon">🔄</span> Fetch Data
-      </button>
-      <div class="live-badge">
-        <div class="live-dot"></div>
-        <span id="liveLabel">Ready</span>
-        <span style="font-size:10px;opacity:.5;margin-left:4px;" id="backendStatus"></span>
-      </div>
-    </div>
-  </nav>
-
-  <div class="page">
-
-    <!-- STATS ROW -->
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-label">Total logs</div>
-        <div class="stat-val" id="statTotal">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Incidents</div>
-        <div class="stat-val" id="statIncidents" style="color:var(--red)">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">High risk</div>
-        <div class="stat-val" id="statHighRisk" style="color:var(--amber)">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Violations</div>
-        <div class="stat-val" id="statViolations" style="color:var(--red)">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Avg latency</div>
-        <div class="stat-val" id="statLatency">—</div>
-        <div class="stat-sub">ms</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Drift status</div>
-        <div class="stat-val" id="statDrift" style="font-size:14px;padding-top:4px">—</div>
-      </div>
-    </div>
-
-    <!-- LOGS TAB -->
-    <div class="tab-content active" id="tab-logs">
-      <div class="card">
-        <div class="card-head">
-          <div class="card-title">Agent action feed</div>
-          <div style="display:flex;gap:10px;align-items:center">
-            <span class="card-count" id="logCount">0 logs</span>
-            <span class="endpoint ep-get"><span class="ep-method">GET</span>/logs</span>
-            <span class="card-action" onclick="fetchAll()">↻ Refresh</span>
-          </div>
-        </div>
-        <div id="logTableWrap">
-          <div class="empty-box">
-            <div class="empty-icon">📋</div>
-            <div class="empty-text">Enter your API key and click Fetch Data</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-head">
-          <div class="card-title">Send demo payload</div>
-          <span class="endpoint ep-post"><span class="ep-method">POST</span>/log</span>
-        </div>
-        <div class="payload-box">
-          {<br>
-          &nbsp;&nbsp;<span class="pj-key">"api_key"</span>: <span class="pj-str"
-            id="demoKeyDisplay">"demo_key_001"</span>,<br>
-          &nbsp;&nbsp;<span class="pj-key">"agent_name"</span>: <span class="pj-str">"fraud-bot"</span>,<br>
-          &nbsp;&nbsp;<span class="pj-key">"action_type"</span>: <span class="pj-str">"approve"</span>,<br>
-          &nbsp;&nbsp;<span class="pj-key">"input"</span>: { <span class="pj-key">"amount"</span>: <span
-            class="pj-num">75000</span>, <span class="pj-key">"kyc_verified"</span>: <span class="pj-num">false</span>
-          },<br>
-          &nbsp;&nbsp;<span class="pj-key">"output"</span>: { <span class="pj-key">"confidence"</span>: <span
-            class="pj-num">0.6</span> },<br>
-          &nbsp;&nbsp;<span class="pj-key">"reasoning"</span>: <span class="pj-str">""</span><br>
-          }
-        </div>
-        <button class="send-payload-btn" onclick="sendDemoPayload()">▶ Send payload — triggers 3 RBI violations</button>
-      </div>
-    </div>
-
-    <!-- INCIDENTS TAB -->
-    <div class="tab-content" id="tab-incidents">
-      <div class="card">
-        <div class="card-head">
-          <div class="card-title">Flagged incidents</div>
-          <div style="display:flex;gap:10px;align-items:center">
-            <span class="card-count" id="incidentCount">0 incidents</span>
-            <span class="endpoint ep-get"><span class="ep-method">GET</span>/incidents</span>
-            <span class="card-action" onclick="fetchIncidents()">↻ Refresh</span>
-          </div>
-        </div>
-        <div id="incidentTableWrap">
-          <div class="empty-box">
-            <div class="empty-icon">🔍</div>
-            <div class="empty-text">No incidents yet</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- REPORT TAB -->
-    <div class="tab-content" id="tab-report">
-      <div class="grid-2">
-        <div class="card">
-          <div class="card-head">
-            <div class="card-title">RBI compliance report</div>
-            <div style="display:flex;gap:10px;align-items:center">
-              <span class="endpoint ep-get"><span class="ep-method">GET</span>/report</span>
-              <span class="endpoint ep-get"><span class="ep-method">GET</span>/report/html</span>
-              <span class="card-action" onclick="fetchReport()">↻ Load</span>
+<body class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <aside class="sidebar w-72 flex flex-col h-full z-20 shrink-0">
+        <div class="p-8 pb-4">
+            <div class="flex items-center space-x-3 mb-10">
+                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <h1 class="text-xl font-bold outfit tracking-tight">Agent<span class="text-blue-500">Bridge</span></h1>
             </div>
-          </div>
-          <div id="reportContent">
-            <div class="empty-box">
-              <div class="empty-icon">📄</div>
-              <div class="empty-text">Click Load to generate report</div>
-            </div>
-          </div>
+
+            <nav class="space-y-1">
+                <button onclick="showTab('dashboard')" class="nav-link w-full text-left px-4 py-3 flex items-center space-x-3 group active" id="btn-dashboard">
+                    <svg class="h-5 w-5 opacity-60 group-hover:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+                    <span class="font-medium">Dashboard</span>
+                </button>
+                <button onclick="showTab('agents')" class="nav-link w-full text-left px-4 py-3 flex items-center space-x-3 group" id="btn-agents">
+                    <svg class="h-5 w-5 opacity-60 group-hover:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                    <span class="font-medium">Agent Registry</span>
+                </button>
+                <button onclick="showTab('reports')" class="nav-link w-full text-left px-4 py-3 flex items-center space-x-3 group" id="btn-reports">
+                    <svg class="h-5 w-5 opacity-60 group-hover:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span class="font-medium">RBI Reports</span>
+                </button>
+                <button onclick="showTab('incidents')" class="nav-link w-full text-left px-4 py-3 flex items-center space-x-3 group" id="btn-incidents">
+                    <svg class="h-5 w-5 opacity-60 group-hover:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <span class="font-medium">Incidents</span>
+                </button>
+                <button onclick="showTab('intelligence')" class="nav-link w-full text-left px-4 py-3 flex items-center space-x-3 group" id="btn-intelligence">
+                    <svg class="h-5 w-5 opacity-60 group-hover:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                    <span class="font-medium">Intelligence</span>
+                </button>
+            </nav>
         </div>
 
-        <div class="card">
-          <div class="card-head">
-            <div class="card-title">RBI FREE-AI clause status</div>
-            <div class="card-count">8 clauses</div>
-          </div>
-          <div class="rbi-list">
-            <div class="rbi-row">
-              <div class="rbi-ico ri-pass" id="rbi-1-3">✓</div>
-              <div class="rbi-info">
-                <div class="rbi-clause">1.3 — Agent identification</div>
-                <div class="rbi-desc">agent_name required in every log</div>
-              </div>
-              <div class="rbi-status rs-ok" id="rbi-1-3-st">compliant</div>
-            </div>
-            <div class="rbi-row">
-              <div class="rbi-ico ri-pass" id="rbi-2-1">✓</div>
-              <div class="rbi-info">
-                <div class="rbi-clause">2.1 — Input logging</div>
-                <div class="rbi-desc">inputs field must be non-empty</div>
-              </div>
-              <div class="rbi-status rs-ok" id="rbi-2-1-st">compliant</div>
-            </div>
-            <div class="rbi-row">
-              <div class="rbi-ico ri-fail" id="rbi-3-1">✕</div>
-              <div class="rbi-info">
-                <div class="rbi-clause">3.1 — Reasoning required</div>
-                <div class="rbi-desc">reasoning field must not be empty</div>
-              </div>
-              <div class="rbi-status rs-bad" id="rbi-3-1-st">violation</div>
-            </div>
-            <div class="rbi-row">
-              <div class="rbi-ico ri-pass" id="rbi-4-2">✓</div>
-              <div class="rbi-info">
-                <div class="rbi-clause">4.2 — Timestamps</div>
-                <div class="rbi-desc">created_at auto-assigned on every log</div>
-              </div>
-              <div class="rbi-status rs-ok" id="rbi-4-2-st">compliant</div>
-            </div>
-            <div class="rbi-row">
-              <div class="rbi-ico ri-fail" id="rbi-4-4">✕</div>
-              <div class="rbi-info">
-                <div class="rbi-clause">4.4 — Session grouping</div>
-                <div class="rbi-desc">session_id must be present</div>
-              </div>
-              <div class="rbi-status rs-bad" id="rbi-4-4-st">violation</div>
-            </div>
-            <div class="rbi-row">
-              <div class="rbi-ico ri-pass" id="rbi-5-0">✓</div>
-              <div class="rbi-info">
-                <div class="rbi-clause">5.0 — Output recorded</div>
-                <div class="rbi-desc">output field must be non-empty</div>
-              </div>
-              <div class="rbi-status rs-ok" id="rbi-5-0-st">compliant</div>
-            </div>
-            <div class="rbi-row">
-              <div class="rbi-ico ri-pass" id="rbi-5-2">✓</div>
-              <div class="rbi-info">
-                <div class="rbi-clause">5.2 — Action classification</div>
-                <div class="rbi-desc">action_type must match known verb taxonomy</div>
-              </div>
-              <div class="rbi-status rs-ok" id="rbi-5-2-st">compliant</div>
-            </div>
-            <div class="rbi-row">
-              <div class="rbi-ico ri-fail" id="rbi-6-1">✕</div>
-              <div class="rbi-info">
-                <div class="rbi-clause">6.1 — KYC for approvals</div>
-                <div class="rbi-desc">kyc_verified must be true for approve actions</div>
-              </div>
-              <div class="rbi-status rs-bad" id="rbi-6-1-st">violation</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- INTELLIGENCE TAB — NEW -->
-    <div class="tab-content" id="tab-intelligence">
-
-      <!-- NL Query -->
-      <div class="card">
-        <div class="card-head">
-          <div class="card-title">Ask your compliance data</div>
-          <span class="endpoint ep-post"><span class="ep-method">POST</span>/query</span>
-        </div>
-        <div class="query-wrap">
-          <div class="query-suggestions">
-            <span class="query-chip" onclick="setQuery(this)">Did my agent show bias this week?</span>
-            <span class="query-chip" onclick="setQuery(this)">How many high risk decisions were made?</span>
-            <span class="query-chip" onclick="setQuery(this)">Which actions had missing KYC?</span>
-            <span class="query-chip" onclick="setQuery(this)">What is my biggest compliance risk?</span>
-          </div>
-          <div class="query-input-row">
-            <input class="query-input" id="queryInput"
-              placeholder="Ask anything about your agent logs in plain English...">
-            <button class="query-btn" id="queryBtn" onclick="sendQuery()">Ask →</button>
-          </div>
-          <div class="query-answer" id="queryAnswer"></div>
-        </div>
-      </div>
-
-      <div class="intel-grid">
-        <!-- Behavioral Drift -->
-        <div class="card">
-          <div class="card-head">
-            <div class="card-title">Behavioral drift</div>
-            <div style="display:flex;gap:10px;align-items:center">
-              <span class="endpoint ep-get"><span class="ep-method">GET</span>/drift</span>
-              <span class="card-action" onclick="fetchDrift()">↻ Analyse</span>
-            </div>
-          </div>
-          <div id="driftContent">
-            <div class="empty-box">
-              <div class="empty-icon">📈</div>
-              <div class="empty-text">Click Analyse to compare this week vs last week</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Structuring Detection -->
-        <div class="card">
-          <div class="card-head">
-            <div class="card-title">Structuring detection</div>
-            <div style="display:flex;gap:10px;align-items:center">
-              <span class="endpoint ep-get"><span class="ep-method">GET</span>/structuring</span>
-              <span class="card-action" onclick="fetchStructuring()">↻ Scan</span>
-            </div>
-          </div>
-          <div id="structuringContent">
-            <div class="empty-box">
-              <div class="empty-icon">🔎</div>
-              <div class="empty-text">Click Scan to detect ₹50K threshold patterns</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- RULES ENGINE TAB -->
-    <div class="tab-content" id="tab-rules">
-      <div class="grid-2">
-        <div class="card">
-          <div class="card-head">
-            <div class="card-title">Anomaly rules</div>
-            <div class="card-count">6 active</div>
-          </div>
-          <div class="anomaly-list">
-            <div class="an-row">
-              <div class="an-num">01</div>
-              <div class="an-body">
-                <div class="an-name">High-value approval without risk flag</div>
-                <div class="an-desc">Amount &gt; ₹50,000 approved with no risk flag in output</div>
-              </div>
-              <div class="an-sev"><span class="badge b-high">high</span></div>
-            </div>
-            <div class="an-row">
-              <div class="an-num">02</div>
-              <div class="an-body">
-                <div class="an-name">Missing reasoning</div>
-                <div class="an-desc">Agent made a decision with no reasoning logged — violates FREE-AI Clause 3.1</div>
-              </div>
-              <div class="an-sev"><span class="badge b-med">medium</span></div>
-            </div>
-            <div class="an-row">
-              <div class="an-num">03</div>
-              <div class="an-body">
-                <div class="an-name">Approval without KYC verification</div>
-                <div class="an-desc">Approval action but KYC status absent from input data</div>
-              </div>
-              <div class="an-sev"><span class="badge b-high">high</span></div>
-            </div>
-            <div class="an-row">
-              <div class="an-num">04</div>
-              <div class="an-body">
-                <div class="an-name">Unknown action type</div>
-                <div class="an-desc">Action type is unclassified — not in the known verb taxonomy</div>
-              </div>
-              <div class="an-sev"><span class="badge b-med">medium</span></div>
-            </div>
-            <div class="an-row">
-              <div class="an-num">05</div>
-              <div class="an-body">
-                <div class="an-name">Low confidence approval</div>
-                <div class="an-desc">Agent approved with confidence score below 0.75</div>
-              </div>
-              <div class="an-sev"><span class="badge b-med">medium</span></div>
-            </div>
-            <div class="an-row">
-              <div class="an-num">06</div>
-              <div class="an-body">
-                <div class="an-name">Consecutive rejection pattern</div>
-                <div class="an-desc">Same user rejected 3+ times — possible bias detection flag</div>
-              </div>
-              <div class="an-sev"><span class="badge b-med">medium</span></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-head">
-            <div class="card-title">RBI FREE-AI framework coverage</div>
-            <div class="card-count">8 clauses monitored</div>
-          </div>
-          <div class="rbi-list">
-            <div class="rbi-row">
-              <div class="rbi-ico ri-pass">✓</div>
-              <div class="rbi-info">
-                <div class="rbi-clause">Clause 1.3 — Agent identification</div>
-                <div class="rbi-desc">agent_name required in every log entry</div>
-              </div>
-            </div>
-            <div class="rbi-row">
-              <div class="rbi-ico ri-pass">✓</div>
-              <div class="rbi-info">
-                <div class="rbi-clause">Clause 2.1 — Data traceability</div>
-                <div class="rbi-desc">Input data must be logged for every decision</div>
-              </div>
-            </div>
-            <div class="rbi-row">
-              <div class="rbi-ico ri-pass">✓</div>
-              <div class="rbi-info">
-                <div class="rbi-clause">Clause 3.1 — Explainability</div>
-                <div class="rbi-desc">Reasoning field required — Groq generates if missing</div>
-              </div>
-            </div>
-            <div class="rbi-row">
-              <div class="rbi-ico ri-pass">✓</div>
-              <div class="rbi-info">
-                <div class="rbi-clause">Clause 4.2 — Auditability</div>
-                <div class="rbi-desc">Every decision timestamped automatically</div>
-              </div>
-            </div>
-            <div class="rbi-row">
-              <div class="rbi-ico ri-pass">✓</div>
-              <div class="rbi-info">
-                <div class="rbi-clause">Clause 4.4 — Session traceability</div>
-                <div class="rbi-desc">Decisions grouped by session_id for audit trail</div>
-              </div>
-            </div>
-            <div class="rbi-row">
-              <div class="rbi-ico ri-pass">✓</div>
-              <div class="rbi-info">
-                <div class="rbi-clause">Clause 5.0 — Outcome logging</div>
-                <div class="rbi-desc">Output recorded for every agent decision</div>
-              </div>
-            </div>
-            <div class="rbi-row">
-              <div class="rbi-ico ri-pass">✓</div>
-              <div class="rbi-info">
-                <div class="rbi-clause">Clause 5.2 — Action classification</div>
-                <div class="rbi-desc">action_type must match known verb taxonomy</div>
-              </div>
-            </div>
-            <div class="rbi-row">
-              <div class="rbi-ico ri-pass">✓</div>
-              <div class="rbi-info">
-                <div class="rbi-clause">Clause 6.1 — KYC verification</div>
-                <div class="rbi-desc">KYC status required for all approval decisions</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- MANUAL LOG TAB -->
-    <div class="tab-content" id="tab-manual">
-      <div class="card">
-        <div class="card-head">
-          <div class="card-title">Submit log from UI</div>
-          <span class="endpoint ep-post"><span class="ep-method">POST</span>/log-manual</span>
-        </div>
-        <div style="padding:20px;display:flex;flex-direction:column;gap:14px;">
-          <div style="display:flex; gap:10px; margin-bottom:10px;">
-            <button id="btn-persona-fraud" onclick="setMLPreset('fraud')" class="preset-btn"
-              style="flex:1; background:var(--blue-l); border:1px solid var(--blue-b); border-radius:8px; padding:8px; font-size:11px; font-weight:600; cursor:pointer; font-family:var(--sans); color:var(--blue); transition:all .15s; display:none;">Persona:
-              Fraudbot (demo_key_001)</button>
-            <button id="btn-persona-loan" onclick="setMLPreset('loan')" class="preset-btn"
-              style="flex:1; background:var(--purple-l); border:1px solid var(--purple-b); border-radius:8px; padding:8px; font-size:11px; font-weight:600; cursor:pointer; font-family:var(--sans); color:var(--purple); transition:all .15s; display:none;">Persona:
-              Loan Bot (loan_key_999)</button>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-            <div>
-              <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Agent Name *</label>
-              <input id="ml-agent" type="text" placeholder="e.g. FraudDetectorAgent"
-                style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;">
-            </div>
-            <div>
-              <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Action Type *</label>
-              <select id="ml-action"
-                style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;appearance:none;">
-                <option value="approve">approve</option>
-                <option value="loan">loan</option>
-                <option value="reject">reject</option>
-                <option value="verify">verify</option>
-              </select>
-            </div>
-
-            <div id="fraud-fields" style="display:contents;">
-              <div id="ml-field-fraud-amount">
-                <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Transaction Amount
-                  (₹)</label>
-                <input id="ml-amount" type="number" placeholder="e.g. 75000"
-                  style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;">
-              </div>
-              <div id="pep-wrap">
-                <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Is PEP (Politically
-                  Exposed)?</label>
-                <select id="ml-pep"
-                  style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;appearance:none;">
-                  <option value="false">No</option>
-                  <option value="true">Yes — PEP</option>
-                </select>
-              </div>
-            </div>
-
-            <div id="loan-fields" style="display:contents;">
-              <div id="ml-field-loan-amount" style="display:none">
-                <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Loan Amount requested
-                  (₹)</label>
-                <input id="ml-loan-amount" type="number" placeholder="e.g. 500000"
-                  style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;">
-              </div>
-              <div id="ml-field-loan-credit" style="display:none">
-                <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Credit Score
-                  (300-900)</label>
-                <input id="ml-credit" type="number" placeholder="e.g. 750"
-                  style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;">
-              </div>
-              <div id="ml-field-loan-income" style="display:none">
-                <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Annual Income (₹)</label>
-                <input id="ml-income" type="number" placeholder="e.g. 1200000"
-                  style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;">
-              </div>
-            </div>
-
-            <div id="fraud-fields-2" style="display:none;">
-              <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Transaction Type</label>
-              <select id="ml-tx-type"
-                style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;appearance:none;">
-                <option value="upi">UPI</option>
-                <option value="neft">NEFT</option>
-                <option value="rtgs">RTGS</option>
-                <option value="wire">Wire</option>
-              </select>
-            </div>
-            <div id="loan-fields-2" style="display:none;">
-              <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">DTI Ratio / Employment
-                Years</label>
-              <div style="display:flex;gap:6px;">
-                <input id="ml-dti" type="number" step="0.01" placeholder="DTI (.28)"
-                  style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none;">
-                <input id="ml-emp" type="number" placeholder="Years"
-                  style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none;">
-              </div>
-            </div>
-
-            <div>
-              <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">KYC Status</label>
-              <select id="ml-kyc"
-                style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;appearance:none;">
-                <option value="true">Verified</option>
-                <option value="false">Not Verified</option>
-              </select>
-            </div>
-            <div>
-              <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Confidence Score</label>
-              <input id="ml-confidence" type="number" step="0.01" value="0.85"
-                style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;">
-            </div>
-          </div>
-          <div>
-            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Decision Reasoning (RBI Sutra
-              6)</label>
-            <textarea id="ml-reasoning" rows="2" placeholder="Why did the agent make this decision?"
-              style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;resize:vertical;line-height:1.6;"></textarea>
-          </div>
-          <div>
-            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Extra Input Fields (JSON —
-              optional)</label>
-            <textarea id="ml-extra" rows="2" placeholder='{"customer_id": "CUST_001", "risk_score": 0.3}'
-              style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--mono);font-size:12px;color:var(--text);outline:none;resize:vertical;line-height:1.6;"></textarea>
-          </div>
-          <div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;">
-            <button type="button" onclick="submitManualLog()" id="ml-submit"
-              style="width:100%;background:var(--green);color:white;border:none;border-radius:10px;padding:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:all .2s;box-shadow:0 4px 12px var(--green-b);font-family:var(--sans);">
-              <span>▶</span> Submit Log
+        <div class="mt-auto p-4 space-y-1">
+            <button onclick="showTab('settings')" class="nav-link w-full text-left px-4 py-3 flex items-center space-x-3 group" id="btn-settings">
+                <svg class="h-5 w-5 opacity-60 group-hover:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                <span class="font-medium">Settings</span>
             </button>
-          </div>
-          <div id="ml-result" style="display:none;padding:14px;border-radius:8px;font-size:12px;line-height:1.7;"></div>
+            <button onclick="logout()" class="nav-link w-full text-left px-4 py-3 flex items-center space-x-3 text-red-500/80 hover:text-red-400 group">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                <span class="font-medium">Logout</span>
+            </button>
+            <div id="company-chip" class="mt-4 px-4 py-3 bg-white/5 rounded-2xl flex items-center space-x-3 border border-white/5">
+                <div class="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-xs">C</div>
+                <div class="flex-1 min-w-0">
+                    <p id="company-name" class="text-xs font-semibold truncate leading-none mb-1">Company Corp</p>
+                    <p class="text-[10px] text-gray-500 uppercase tracking-wider">Enterprise</p>
+                </div>
+            </div>
         </div>
-      </div>
+    </aside>
+
+    <!-- Main Content wrapper -->
+    <main class="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+        <!-- Top Bar -->
+        <header class="h-20 flex items-center justify-between px-10 border-b border-white/5 relative z-10 shrink-0">
+            <div class="flex items-center space-x-4">
+                <h2 id="tab-title" class="text-2xl font-bold outfit">Dashboard</h2>
+                <div id="agent-selector-container" class="ml-8">
+                     <select id="agent-selector" onchange="loadStats()" class="bg-[#161b22] border border-white/10 text-white rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none min-w-[200px]">
+                        <option value="all">All Agents</option>
+                        <!-- Dynamic Agents -->
+                     </select>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-6">
+                <div class="flex items-center space-x-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[11px] font-bold text-emerald-400 uppercase tracking-widest">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 badge-pulse"></span>
+                    <span>System Live</span>
+                </div>
+                <button onclick="openManualLog()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-all">Manual Log</button>
+            </div>
+        </header>
+
+        <!-- Content Sections -->
+        <div id="tab-content" class="flex-1 overflow-y-auto custom-scrollbar p-10 relative">
+            
+            <!-- SECTION: DASHBOARD -->
+            <div id="section-dashboard" class="space-y-10 animate-in fade-in duration-500">
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+                    <div class="card p-6 gradient-border-item">
+                        <p class="text-sm text-gray-500 font-medium mb-1">Total Logs</p>
+                        <h3 id="stat-logs" class="text-3xl font-bold outfit">-</h3>
+                    </div>
+                    <div class="card p-6 gradient-border-item">
+                        <p class="text-sm text-gray-500 font-medium mb-1">Incidents</p>
+                        <h3 id="stat-incidents" class="text-3xl font-bold outfit text-amber-500">-</h3>
+                    </div>
+                    <div class="card p-6 gradient-border-item">
+                        <p class="text-sm text-gray-500 font-medium mb-1">High Risk</p>
+                        <h3 id="stat-risk" class="text-3xl font-bold outfit text-red-500">-</h3>
+                    </div>
+                    <div class="card p-6 gradient-border-item">
+                        <p class="text-sm text-gray-500 font-medium mb-1">Violations</p>
+                        <h3 id="stat-violations" class="text-3xl font-bold outfit text-pink-500">-</h3>
+                    </div>
+                    <div class="card p-6 gradient-border-item">
+                        <p class="text-sm text-gray-500 font-medium mb-1">Latency</p>
+                        <h3 id="stat-latency" class="text-3xl font-bold outfit text-emerald-500">-</h3>
+                    </div>
+                    <div class="card p-6 gradient-border-item">
+                        <p class="text-sm text-gray-500 font-medium mb-1">Drift</p>
+                        <div class="flex items-center space-x-2">
+                            <h3 id="stat-drift" class="text-3xl font-bold outfit">Stable</h3>
+                            <div id="drift-dot" class="w-3 h-3 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/20"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Grid -->
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                    <!-- Action Feed -->
+                    <div class="xl:col-span-2 space-y-6">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-lg font-bold outfit">Live Action Feed</h4>
+                            <div class="flex space-x-2">
+                                <input type="text" placeholder="Search logs..." class="bg-white/5 border border-white/10 rounded-lg px-4 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-500 w-64">
+                            </div>
+                        </div>
+                        <div class="card overflow-hidden">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left">
+                                    <thead>
+                                        <tr class="bg-white/5 text-[10px] uppercase tracking-widest text-gray-500">
+                                            <th class="px-6 py-4 font-bold">Decision ID</th>
+                                            <th class="px-6 py-4 font-bold">Timestamp</th>
+                                            <th class="px-6 py-4 font-bold">Type</th>
+                                            <th class="px-6 py-4 font-bold">Risk</th>
+                                            <th class="px-6 py-4 font-bold">Verdict</th>
+                                            <th class="px-6 py-4 font-bold text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="log-table-body" class="divide-y divide-white/5 text-sm">
+                                        <!-- Dynamic Logs -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Side Panel: Overall Compliance -->
+                    <div class="space-y-6">
+                        <h4 class="text-lg font-bold outfit">Compliance Status</h4>
+                        <div class="card p-8 flex flex-col items-center">
+                            <div class="relative w-48 h-48 flex items-center justify-center">
+                                <svg class="w-full h-full transform -rotate-90">
+                                    <circle cx="96" cy="96" r="80" stroke="rgba(255,255,255,0.05)" stroke-width="12" fill="none" />
+                                    <circle id="compliance-gauge" cx="96" cy="96" r="80" stroke="url(#blue-gradient)" stroke-width="12" fill="none" stroke-dasharray="502" stroke-dashoffset="100" stroke-linecap="round" />
+                                    <defs>
+                                        <linearGradient id="blue-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+                                            <stop offset="100%" style="stop-color:#60a5fa;stop-opacity:1" />
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
+                                <div class="absolute text-center">
+                                    <span id="compliance-score" class="text-5xl font-bold outfit leading-none">84</span>
+                                    <p class="text-[10px] text-gray-500 uppercase tracking-widest mt-1">Score / 100</p>
+                                </div>
+                            </div>
+                            <div class="mt-8 grid grid-cols-2 gap-4 w-full">
+                                <div class="text-center p-3 bg-white/5 rounded-xl border border-white/5">
+                                    <p class="text-[10px] uppercase text-gray-500 font-bold mb-1">Clauses Passed</p>
+                                    <p class="text-lg font-bold text-emerald-400">7/8</p>
+                                </div>
+                                <div class="text-center p-3 bg-white/5 rounded-xl border border-white/5">
+                                    <p class="text-[10px] uppercase text-gray-500 font-bold mb-1">Reports Run</p>
+                                    <p class="text-lg font-bold text-indigo-400">12</p>
+                                </div>
+                            </div>
+                            <button onclick="showTab('reports')" class="w-full mt-6 py-3 border border-blue-500/30 text-blue-400 rounded-xl text-sm font-semibold hover:bg-blue-500/10 transition-all">Detailed Report</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION: AGENTS -->
+            <div id="section-agents" class="hidden space-y-8 animate-in slide-in-from-right-4 duration-500">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-2xl font-bold outfit">AI Agent Registry</h3>
+                        <p class="text-gray-500 text-sm mt-1">Register and monitor your autonomous AI agents.</p>
+                    </div>
+                    <button onclick="openRegisterAgent()" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-600/30">Register New Agent</button>
+                </div>
+                
+                <div class="card overflow-hidden">
+                     <table class="w-full text-left">
+                        <thead>
+                            <tr class="bg-white/5 text-[10px] uppercase tracking-widest text-gray-500">
+                                <th class="px-8 py-4">Agent Name</th>
+                                <th class="px-8 py-4">Type</th>
+                                <th class="px-8 py-4">Status</th>
+                                <th class="px-8 py-4">Registered</th>
+                                <th class="px-8 py-4">Total Logs</th>
+                                <th class="px-8 py-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="agent-table-body" class="divide-y divide-white/5">
+                            <!-- Dynamic Agents -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- SECTION: REPORTS -->
+            <div id="section-reports" class="hidden space-y-8 animate-in slide-in-from-right-4 duration-500">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-2xl font-bold outfit">RBI FREE-AI Compliance Reports</h3>
+                    <div class="flex space-x-3">
+                        <button class="px-4 py-2 glass rounded-lg text-sm font-semibold border-emerald-500/30 text-emerald-400">Download PDF</button>
+                        <button class="px-4 py-2 glass rounded-lg text-sm font-semibold">Download CSV</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
+                    <div class="xl:col-span-3 card p-8">
+                        <div class="space-y-6">
+                            <div class="flex items-center justify-between pb-6 border-b border-white/5">
+                                <h4 class="font-bold text-lg outfit">Clause-wise Audit Results</h4>
+                                <span class="px-3 py-1 bg-amber-500/10 text-amber-500 rounded-full text-[10px] font-bold">LAST UPDATED: TODAY</span>
+                            </div>
+                            
+                            <div class="space-y-4" id="clauses-container">
+                                <!-- Dynamic Clauses -->
+                                <div class="p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 flex items-center justify-between">
+                                    <div class="flex items-center space-x-4">
+                                        <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold">1</div>
+                                        <div>
+                                            <p class="text-sm font-bold">Fairness and Bias (F.1)</p>
+                                            <p class="text-xs text-gray-500">Ensuring no demographic disparity in decisions.</p>
+                                        </div>
+                                    </div>
+                                    <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest px-2 py-1 border border-emerald-500/30 rounded">Passed</span>
+                                </div>
+
+                                <div class="p-4 rounded-xl border border-red-500/20 bg-red-500/5 flex items-center justify-between">
+                                    <div class="flex items-center space-x-4">
+                                        <div class="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 font-bold">2</div>
+                                        <div>
+                                            <p class="text-sm font-bold">Robustness and Integrity (R.1)</p>
+                                            <p class="text-xs text-gray-500">Error handling and system stability under stress.</p>
+                                        </div>
+                                    </div>
+                                    <span class="text-[10px] font-bold text-red-500 uppercase tracking-widest px-2 py-1 border border-red-500/30 rounded">Violation</span>
+                                </div>
+                                <!-- ... more ... -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <h4 class="font-bold text-lg outfit">Version History</h4>
+                        <div class="space-y-3" id="report-history">
+                            <div class="card p-4 hover:bg-white/5 cursor-pointer transition-all border-white/5">
+                                <p class="text-xs font-bold">Compliance Report v21</p>
+                                <p class="text-[10px] text-gray-500">April 04, 2026 • Score: 88</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION: INCIDENTS -->
+            <div id="section-incidents" class="hidden animate-in slide-in-from-right-4 duration-500">
+                <div class="flex justify-between items-center mb-8">
+                     <h3 class="text-2xl font-bold outfit">Active Incidents</h3>
+                     <div class="flex space-x-2">
+                        <select class="bg-white/5 border border-white/10 text-white rounded-lg px-3 py-1.5 text-xs outline-none">
+                            <option>All Severities</option>
+                            <option>High</option>
+                            <option>Medium</option>
+                        </select>
+                     </div>
+                </div>
+
+                <div class="card overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="bg-white/5 text-[10px] uppercase tracking-widest text-gray-500">
+                                <th class="px-8 py-4">Incident ID</th>
+                                <th class="px-8 py-4">Severity</th>
+                                <th class="px-8 py-4">Agent</th>
+                                <th class="px-8 py-4">Rule Triggered</th>
+                                <th class="px-8 py-4">Time</th>
+                                <th class="px-8 py-4 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="incident-table-body" class="divide-y divide-white/5">
+                            <!-- Dynamic Incidents -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- SECTION: INTELLIGENCE -->
+            <div id="section-intelligence" class="hidden space-y-10 animate-in slide-in-from-right-4 duration-500">
+                <div class="flex justify-between items-end">
+                    <div>
+                        <h3 class="text-2xl font-bold outfit">Compliance Intelligence</h3>
+                        <p class="text-gray-500 text-sm mt-1">AI-driven analytics and natural language query.</p>
+                    </div>
+                    <div id="drilldown-banner" class="hidden px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-xl text-[11px] font-bold text-amber-500 uppercase flex items-center space-x-2">
+                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                        <span>Drill-down active: Fraud Bot Approval Rate</span>
+                        <button onclick="closeDrilldown()" class="ml-4 opacity-50 hover:opacity-100">✕</button>
+                    </div>
+                </div>
+
+                <!-- NLQ Input -->
+                <div class="card p-8 gradient-border-item">
+                    <h4 class="font-bold outfit mb-4 flex items-center space-x-2">
+                        <svg class="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        <span>Ask AgentBridge AI</span>
+                    </h4>
+                    <div class="relative">
+                        <input id="ai-query-input" type="text" placeholder="e.g. 'Show me KYC violations from last week' or 'Is there any bias in my loan approvals?'" class="w-full bg-[#161b22] border border-white/10 rounded-2xl px-6 py-5 pr-20 text-white shadow-inner focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                        <button onclick="runAIQuery()" class="absolute right-3 top-3 bottom-3 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all">Ask</button>
+                    </div>
+                    <div id="ai-response-container" class="mt-8 hidden animate-in fade-in slide-in-from-top-2 duration-700">
+                        <div class="p-6 bg-blue-600/5 border border-blue-500/20 rounded-2xl">
+                             <div class="flex items-center space-x-2 mb-4">
+                                <span class="bg-blue-500 text-white rounded px-2 py-0.5 text-[10px] font-bold uppercase">AI Response</span>
+                             </div>
+                             <p id="ai-answer" class="text-gray-300 leading-relaxed italic"></p>
+                             <div id="ai-sources" class="mt-4 pt-4 border-t border-blue-500/10 flex flex-wrap gap-2">
+                                <!-- Source links -->
+                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ALERT BANNER (Dynamic) -->
+                <div id="drift-alert" class="hidden p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-sm rounded-2xl flex items-center space-x-3">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <span id="drift-alert-text">⚠️ Significant behavioural drift detected in Fraud Bot — Approval rate increased by 34% this week.</span>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Behavioral Drift (Intelligent) -->
+                    <div class="card p-8">
+                        <h4 class="font-bold outfit mb-8 text-sm uppercase tracking-widest text-gray-500">Action Distribution Drift</h4>
+                        <div class="grid grid-cols-2 gap-4 h-64">
+                            <div class="flex flex-col items-center">
+                                <span class="text-[10px] font-bold text-gray-500 mb-4 uppercase">Last Week</span>
+                                <canvas id="chart-pie-last"></canvas>
+                            </div>
+                            <div class="flex flex-col items-center">
+                                <span class="text-[10px] font-bold text-gray-500 mb-4 uppercase">This Week</span>
+                                <canvas id="chart-pie-this"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-10 overflow-hidden border border-white/5 rounded-2xl">
+                             <table class="w-full text-left text-xs">
+                                <thead class="bg-white/5 text-gray-500 font-bold uppercase tracking-widest">
+                                    <tr>
+                                        <th class="px-4 py-3">Action Type</th>
+                                        <th class="px-4 py-3">Last %</th>
+                                        <th class="px-4 py-3">This %</th>
+                                        <th class="px-4 py-3">Change</th>
+                                        <th class="px-4 py-3">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="drift-table-body" class="divide-y divide-white/5">
+                                    <!-- Dynamic rows from JS -->
+                                </tbody>
+                             </table>
+                        </div>
+                    </div>
+
+                    <div class="space-y-8">
+                        <!-- Drift Progress Bar -->
+                        <div class="card p-8">
+                            <h4 class="font-bold outfit mb-6 text-sm uppercase tracking-widest text-gray-500">Overall Behavioral Drift Score</h4>
+                            <div class="flex items-end justify-between mb-3">
+                                <span id="drift-score-label" class="text-3xl font-bold outfit">0</span>
+                                <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Stability Index</span>
+                            </div>
+                            <div class="w-full h-3 bg-white/5 rounded-full overflow-hidden">
+                                <div id="drift-bar" class="h-full bg-blue-600 w-[10%] transition-all duration-1000"></div>
+                            </div>
+                            <p class="text-[11px] text-gray-500 mt-4 leading-relaxed">A score of 0 indicates perfect behavioral stability. Any deviation above 20 triggers a compliance review.</p>
+                        </div>
+
+                        <!-- Drill-down Chart (Hidden until click) -->
+                        <div id="drift-drilldown" class="card p-8 hidden animate-in slide-in-from-top-4 duration-500">
+                             <h4 class="font-bold outfit mb-6 text-sm uppercase tracking-widest text-gray-500" id="drilldown-title">Day-by-Day Trend</h4>
+                             <div class="h-48"><canvas id="chart-drilldown"></canvas></div>
+                             <div class="mt-8 p-4 bg-blue-500/5 rounded-xl border border-blue-500/10">
+                                 <p id="drift-explanation" class="text-[11px] text-gray-400 italic"></p>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Structuring & Volume -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="card p-8 lg:col-span-2">
+                        <h4 class="font-bold outfit mb-6 text-sm uppercase tracking-widest text-gray-500">Confidence vs Latency Correlation</h4>
+                        <div class="h-64"><canvas id="chart-volume"></canvas></div>
+                    </div>
+                    <div class="card p-8">
+                        <h4 class="font-bold outfit mb-6 text-sm uppercase tracking-widest text-gray-500">Structuring Detection (₹50k+)</h4>
+                        <div id="structuring-results" class="space-y-4">
+                            <div class="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center space-x-3">
+                                <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                                <span class="text-[11px] text-red-500 font-bold uppercase">Pattern Detected</span>
+                            </div>
+                             <p class="text-[11px] text-gray-500">Session S-8321 shows 3 transactions of ₹49,500 within 2 hours. <a href="#" class="text-blue-500 underline">View Session</a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION: SETTINGS -->
+            <div id="section-settings" class="hidden space-y-10 animate-in slide-in-from-right-4 duration-500">
+                <h3 class="text-2xl font-bold outfit">System Settings</h3>
+                
+                <div class="max-w-4xl space-y-8">
+                    <!-- Company Profile -->
+                    <div class="card p-8">
+                        <h4 class="font-bold outfit mb-6">Company Profile</h4>
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Company Name</label>
+                                <input id="set-company-name" class="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 outline-none focus:ring-1 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Industry Vertical</label>
+                                <select id="set-industry" class="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 outline-none">
+                                    <option value="fintech">FinTech</option>
+                                    <option value="bank">Bank</option>
+                                    <option value="NBFC">NBFC</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button class="mt-6 px-6 py-2 bg-blue-600 rounded-xl text-sm font-bold">Save Changes</button>
+                    </div>
+
+                    <!-- Usage -->
+                    <div class="card p-8">
+                         <h4 class="font-bold outfit mb-6">Subscription & Usage</h4>
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <p class="text-sm font-bold" id="bill-plan">Pro Plan</p>
+                                <p class="text-xs text-gray-500">Unlimited agents, 50k logs/month</p>
+                            </div>
+                            <button class="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-bold">Upgrade Plan</button>
+                        </div>
+                        <div class="w-full bg-white/5 h-2 rounded-full overflow-hidden">
+                             <div class="bg-blue-600 h-full w-[12%]"></div>
+                        </div>
+                        <p class="text-[10px] text-gray-500 mt-2">6,102 / 50,000 logs used this month</p>
+                    </div>
+
+                    <!-- Notification -->
+                    <div class="card p-8">
+                         <h4 class="font-bold outfit mb-6">Notification Preferences</h4>
+                         <div class="space-y-4">
+                            <label class="flex items-center space-x-3 cursor-pointer">
+                                <input type="checkbox" checked class="w-5 h-5 bg-blue-600 rounded">
+                                <span class="text-sm">High-severity incident email alerts</span>
+                            </label>
+                            <label class="flex items-center space-x-3 cursor-pointer">
+                                <input type="checkbox" checked class="w-5 h-5 bg-blue-600 rounded">
+                                <span class="text-sm">Weekly RBI compliance digest</span>
+                            </label>
+                         </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <!-- Log Details Backdrop -->
+    <div id="log-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-6">
+        <div class="bg-[#0d1117] border border-white/10 w-full max-w-2xl rounded-3xl overflow-hidden animate-in zoom-in-95 duration-200">
+             <div class="p-6 border-b border-white/5 flex justify-between items-center">
+                 <h3 class="text-lg font-bold outfit">Log Details: <span id="modal-log-id" class="text-blue-500 text-sm ml-2">#83k2-sl9</span></h3>
+                 <button onclick="closeLogModal()" class="text-gray-500 hover:text-white"><svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+             </div>
+             <div class="p-6 overflow-y-auto max-h-[70vh] custom-scrollbar">
+                 <pre id="log-json" class="text-[11px] text-emerald-400 bg-black/50 p-6 rounded-2xl overflow-x-auto"></pre>
+             </div>
+        </div>
     </div>
 
-  </div>
-
-  <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
-  <div class="drawer" id="drawer">
-    <div class="drawer-hdr">
-      <div>
-        <div class="drawer-title" id="drawerTitle">Log detail</div>
-        <div class="drawer-id" id="drawerDecisionId"></div>
-      </div>
-      <button class="drawer-close" onclick="closeDrawer()">✕</button>
-    </div>
-    <div class="drawer-body" id="drawerBody"></div>
-  </div>
-
-  <div class="toast" id="toast"></div>
-
-  <script>
-    let allLogs = [];
-    let allIncidents = [];
-    let lastReport = null;
-    let currentPersona = 'fraud';
-
-    async function callApi(path, method = 'GET', body = null) {
-      const backend = getBackend();
-      const url = `${backend}${path}`;
-      const options = {
-        method,
-        headers: { 'Content-Type': 'application/json' }
-      };
-      const keyInput = document.getElementById('apiKeyInput');
-      if (keyInput && keyInput.value) options.headers['X-API-Key'] = keyInput.value;
-      if (body) options.body = JSON.stringify(body);
-
-      const statusEl = document.getElementById('backendStatus');
-      if (statusEl) statusEl.textContent = `· ${new URL(backend).hostname}`;
-
-      const res = await fetch(url, options);
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: 'API Error' }));
-        throw new Error(err.detail || `Server error: ${res.status}`);
-      }
-      return res.json();
-    }
-
-    function normalizeBackendUrl(url) {
-      if (!url) return url;
-      let u = url.trim().replace(/\/$/, '');
-      if (/^https?:\/\/[a-z0-9-]+\.onrender$/i.test(u)) {
-        u += '.com';
-      }
-      return u;
-    }
-
-    function formatApiDetail(detail) {
-      if (detail == null) return '';
-      if (typeof detail === 'string') return detail;
-      if (Array.isArray(detail)) {
-        return detail.map(d => (d && typeof d === 'object' && d.msg) ? d.msg : String(d)).join('; ');
-      }
-      return String(detail);
-    }
-
-    async function readErrorBody(res) {
-      const t = await res.text();
-      try {
-        const j = JSON.parse(t);
-        const d = formatApiDetail(j.detail);
-        if (d) return d;
-        return j.message || t.slice(0, 300);
-      } catch {
-        return t.slice(0, 300) || res.statusText || String(res.status);
-      }
-    }
-
-    function getBackend() {
-      const input = document.getElementById('backendInput');
-      let manual = (input?.value || '').trim().replace(/\/$/, '');
-      manual = normalizeBackendUrl(manual);
-      if (input && manual !== (input.value || '').trim().replace(/\/$/, '')) {
-        input.value = manual;
-      }
-      const sameOrigin = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
-        ? window.location.origin.replace(/\/$/, '')
-        : '';
-
-      if (/railway\.app/i.test(manual)) {
-        if (input && sameOrigin) input.value = sameOrigin;
-        return sameOrigin;
-      }
-      if (manual) return manual;
-      return sameOrigin;
-    }
-    function getKey() {
-      return document.getElementById('apiKeyInput').value.trim();
-    }
-
-    function switchTab(name) {
-      const names = ['logs', 'incidents', 'report', 'intelligence', 'rules', 'manual'];
-      document.querySelectorAll('.nav-tab').forEach((t, i) => t.classList.toggle('active', names[i] === name));
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.toggle('active', el.id === 'tab-' + name));
-    }
-
-    function toast(msg, dur = 2800) {
-      const el = document.getElementById('toast');
-      el.textContent = msg; el.classList.add('show');
-      setTimeout(() => el.classList.remove('show'), dur);
-    }
-
-    function setLive(txt) { document.getElementById('liveLabel').textContent = txt; }
-
-    function esc(str) {
-      const div = document.createElement('div');
-      div.textContent = str;
-      return div.innerHTML;
-    }
-
-    function openDrawer(log) {
-      document.getElementById('drawerDecisionId').textContent = log.decision_id || '—';
-      document.getElementById('drawerTitle').textContent = log.agent_name || 'Log detail';
-      const body = document.getElementById('drawerBody');
-    let actionStr = log.ai_action_summary || log.action || log.action_type || '—';
-    if (actionStr === 'loan' || actionStr === 'loan_approval') {
-      const amt = (log.inputs?.loan_amount || log.inputs?.amount);
-      if (amt) actionStr = `Lending Transaction (₹${amt})`;
-    } else if (actionStr === 'transaction' || actionStr === 'approve') {
-      const amt = log.inputs?.amount;
-      if (amt) actionStr = `Payment Transaction (₹${amt})`;
-    }
-
-    body.innerHTML = `
-    <div><div class="d-section-title">Overview</div>
-    <div class="d-kv">
-      <div class="d-row"><span class="dk">Agent</span><span class="dv">${esc(log.agent_name || log.agent_id || '—')}</span></div>
-      <div class="d-row"><span class="dk">Action Detail</span><span class="dv" style="font-weight:600">${esc(actionStr)}</span></div>
-      <div class="d-row"><span class="dk">Type</span><span class="dv">${esc(log.action_type || log.action || '—')}</span></div>
-      <div class="d-row"><span class="dk">Risk</span><span class="dv"><span class="badge ${riskClass}">${esc(log.risk_level || '—')}</span></span></div>
-      <div class="d-row"><span class="dk">Flagged</span><span class="dv">${flagged}</span></div>
-      <div class="d-row"><span class="dk">Latency</span><span class="dv">${log.latency_ms != null ? log.latency_ms + 'ms' : '—'}</span></div>
-      <div class="d-row"><span class="dk">Session</span><span class="dv">${esc(log.session_id || '—')}</span></div>
-      <div class="d-row"><span class="dk">Time</span><span class="dv">${log.created_at ? new Date(log.created_at).toLocaleString() : '—'}</span></div>
-    </div></div>
-    ${log.reasoning ? `<div><div class="d-section-title">Reasoning</div><div class="d-json">${esc(log.reasoning)}</div></div>` : ''}
-    ${log.inputs ? `<div><div class="d-section-title">Inputs</div><div class="d-json">${esc(typeof log.inputs === 'string' ? log.inputs : JSON.stringify(log.inputs, null, 2))}</div></div>` : ''}
-    ${log.output ? `<div><div class="d-section-title">Output</div><div class="d-json">${esc(typeof log.output === 'string' ? log.output : JSON.stringify(log.output, null, 2))}</div></div>` : ''}
-    ${log.flag_reason ? `<div><div class="d-section-title">Flag reason</div><div class="viol-item vi-high">${esc(log.flag_reason)}</div></div>` : ''}
-    ${log.compliance_violations?.length ? `<div><div class="d-section-title">Violations (${log.compliance_violations.length})</div><div class="violations-list">${log.compliance_violations.map(v => `<div class="viol-item vi-high">${esc(v)}</div>`).join('')}</div></div>` : ''}
-    ${log.compliance_tags?.length ? `<div><div class="d-section-title">Compliant clauses</div><div style="display:flex;gap:5px;flex-wrap:wrap">${log.compliance_tags.map(t => `<span class="badge b-blue">${esc(t)}</span>`).join('')}</div></div>` : ''}
-  `;
-      document.getElementById('drawer').classList.add('open');
-      document.getElementById('drawerOverlay').classList.add('open');
-    }
-    function closeDrawer() {
-      document.getElementById('drawer').classList.remove('open');
-      document.getElementById('drawerOverlay').classList.remove('open');
-    }
-
-    function renderLogTable(logs, wrapId, countId) {
-      const wrap = document.getElementById(wrapId);
-      document.getElementById(countId).textContent = logs.length + (logs.length === 1 ? ' entry' : ' entries');
-      if (!logs.length) {
-        wrap.innerHTML = `<div class="empty-box"><div class="empty-icon">📋</div><div class="empty-text">No records found</div></div>`;
-        return;
-      }
-      wrap.innerHTML = `<table><thead><tr>
-    <th>Decision ID</th><th>Agent</th><th>Action Detail</th><th>Type</th>
-    <th>Risk</th><th>Flagged</th><th>Latency</th><th>Time</th>
-  </tr></thead><tbody>
-    ${logs.map(log => {
-        const rc = log.risk_level === 'high' ? 'b-high' : log.risk_level === 'medium' ? 'b-med' : 'b-low';
-        const fl = log.flagged ? `<span class="badge b-high">⚠ yes</span>` : `<span class="badge b-low">✓ no</span>`;
-        const ts = log.created_at ? new Date(log.created_at).toLocaleTimeString() : '—';
-        
-        let actionStr = log.ai_action_summary || log.action || log.action_type || '—';
-        if (actionStr === 'loan' || actionStr === 'loan_approval') {
-          const amt = log.inputs?.loan_amount || log.inputs?.amount || '';
-          actionStr = amt ? `Lending Transaction (₹${amt})` : 'Lending Transaction';
-        } else if (actionStr === 'transaction' || actionStr === 'approve') {
-          const amt = log.inputs?.amount;
-          if (amt) actionStr = `Payment Transaction (₹${amt})`;
-        }
-
-        return `<tr onclick="openDrawer(${esc(JSON.stringify(log))})">
-        <td class="mono t3">${esc((log.decision_id || '—').substring(0, 12))}…</td>
-        <td style="font-weight:500">${esc(log.agent_name || log.agent_id || '—')}</td>
-        <td class="t2" style="font-weight:500;color:var(--text)">${esc(actionStr)}</td>
-        <td><span class="action-pill">${esc(log.action_type || log.action || '—')}</span></td>
-        <td><span class="badge ${rc}">${esc(log.risk_level || '—')}</span></td>
-        <td>${fl}</td>
-        <td class="mono t2">${log.latency_ms != null ? log.latency_ms + 'ms' : '—'}</td>
-        <td class="mono t3">${ts}</td>
-      </tr>`;
-      }).join('')}
-  </tbody></table>`;
-    }
-
-    function updateStats(logs) {
-      document.getElementById('statTotal').textContent = logs.length;
-      const incidents = logs.filter(l => l.flagged).length;
-      document.getElementById('statIncidents').textContent = incidents;
-      const highRisk = logs.filter(l => l.risk_level === 'high').length;
-      document.getElementById('statHighRisk').textContent = highRisk;
-      const allViol = logs.reduce((acc, l) => acc + (l.compliance_violations?.length || 0), 0);
-      document.getElementById('statViolations').textContent = allViol;
-      const lats = logs.map(l => l.latency_ms).filter(n => n != null);
-      const avg = lats.length ? Math.round(lats.reduce((a, b) => a + b, 0) / lats.length) : 0;
-      document.getElementById('statLatency').textContent = avg || '—';
-    }
-
-    function updateRBIStatus(report) {
-      if (!report) return;
-      const clauseMap = { '1.3': 'rbi-1-3', '2.1': 'rbi-2-1', '3.1': 'rbi-3-1', '4.2': 'rbi-4-2', '4.4': 'rbi-4-4', '5.0': 'rbi-5-0', '5.2': 'rbi-5-2', '6.1': 'rbi-6-1' };
-      const violations = report.compliance_violations || report.violations || [];
-      Object.entries(clauseMap).forEach(([clause, id]) => {
-        const ico = document.getElementById(id);
-        const st = document.getElementById(id + '-st');
-        if (!ico || !st) return;
-        const violated = violations.some(v => String(v).includes(clause));
-        ico.className = violated ? 'rbi-ico ri-fail' : 'rbi-ico ri-pass';
-        ico.textContent = violated ? '✕' : '✓';
-        st.className = violated ? 'rbi-status rs-bad' : 'rbi-status rs-ok';
-        st.textContent = violated ? 'violation' : 'compliant';
-      });
-    }
-
-    function renderReport(report) {
-      lastReport = report;
-      const el = document.getElementById('reportContent');
-      if (!report || report.message) {
-        el.innerHTML = `<div class="empty-box"><div class="empty-text">${report?.message || 'No report data'}</div></div>`;
-        return;
-      }
-      const ss = report.session_summary || report.summary || {};
-      const total = ss.total_decisions || report.total_actions || allLogs.length;
-      const flagged = ss.flagged || ss.flagged_decisions || report.incidents || 0;
-      const rb = ss.risk_breakdown || {};
-      const score = report.compliance_score || Math.round(((total - flagged) / Math.max(total, 1)) * 100);
-
-      const verdictObj = report.verdict;
-      const verdict = (typeof verdictObj === 'string' ? verdictObj : verdictObj?.message) || (report.rbi_response_block?.compliance_verdict) || '—';
-      const verdictColor = verdict.includes('NON') ? 'var(--red)' : verdict.includes('MOSTLY') ? 'var(--amber)' : 'var(--teal)';
-
-      el.innerHTML = `
-    <div class="report-meta">
-      <div class="report-meta-row"><span class="report-meta-key">Report ID</span><span class="report-meta-val">${esc(report.report_id || '—')}</span></div>
-      <div class="report-meta-row"><span class="report-meta-key">Generated</span><span class="report-meta-val">${report.generated_at ? new Date(report.generated_at).toLocaleString() : '—'}</span></div>
-      <div class="report-meta-row"><span class="report-meta-key">Agent</span><span class="report-meta-val">${esc(report.agent_name || '—')}</span></div>
-      <div class="report-meta-row"><span class="report-meta-key">Framework</span><span class="report-meta-val">RBI FREE-AI August 2025</span></div>
-    </div>
-    <div style="padding:16px;display:flex;flex-direction:column;gap:14px;">
-      <div class="grid-3">
-        <div style="background:var(--teal-l);border:1px solid var(--teal-b);border-radius:8px;padding:12px;">
-          <div style="font-size:9px;color:var(--teal);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Compliance score</div>
-          <div style="font-size:24px;font-weight:600;color:var(--teal);font-family:var(--mono)">${score}<span style="font-size:13px;color:var(--t3)">%</span></div>
+    <!-- Register Agent Backdrop -->
+    <div id="register-agent-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-6">
+        <div class="bg-[#0d1117] border border-white/10 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl">
+             <div class="p-8 border-b border-white/5 flex justify-between items-center">
+                 <h3 class="text-xl font-bold outfit">Register AI Agent</h3>
+                 <button onclick="closeRegisterAgent()" class="text-gray-500 hover:text-white"><svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+             </div>
+             <form id="register-agent-form" class="p-8 space-y-5">
+                 <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Agent Branding</label>
+                    <input id="new-agent-name" required placeholder="FraudDetector Pro v2" class="w-full bg-[#161b22] border border-white/10 rounded-xl px-4 py-3 outline-none">
+                 </div>
+                 <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Domain Function</label>
+                    <select id="new-agent-type" class="w-full bg-[#161b22] border border-white/10 rounded-xl px-4 py-3 outline-none">
+                        <option value="fraud-detection">Fraud Detection</option>
+                        <option value="loan-approval">Loan Approval</option>
+                        <option value="KYC">KYC Verification</option>
+                        <option value="other">General Assistant</option>
+                    </select>
+                 </div>
+                 <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Internal Description</label>
+                    <textarea id="new-agent-desc" rows="3" placeholder="Explain the role and permissions of this agent..." class="w-full bg-[#161b22] border border-white/10 rounded-xl px-4 py-3 outline-none"></textarea>
+                 </div>
+                 <button type="submit" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-600/20">Initialize Agent & Generate API Key</button>
+             </form>
+             <!-- API Key Reveal -->
+             <div id="key-reveal-container" class="hidden p-8 border-t border-white/10 bg-emerald-500/5 items-center justify-center flex-col text-center">
+                <svg class="h-12 w-12 text-emerald-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                <h4 class="font-bold text-emerald-400 mb-2">Agent Registered Successfully!</h4>
+                <p class="text-xs text-gray-400 mb-6">Save this key now. It will <span class="text-red-400 font-bold">never</span> be shown again.</p>
+                <div class="flex items-center space-x-2 w-full">
+                    <input id="generated-key" readonly class="flex-1 bg-black/50 border border-emerald-500/30 rounded-lg px-4 py-3 text-emerald-400 text-xs font-mono">
+                    <button onclick="copyGeneratedKey()" class="px-4 py-3 bg-emerald-500 text-black font-bold rounded-lg text-xs">Copy</button>
+                </div>
+                <button onclick="closeRegisterAgent(); location.reload()" class="mt-6 text-sm underline opacity-60">Finished, take me back</button>
+             </div>
         </div>
-        <div style="background:var(--red-l);border:1px solid var(--red-b);border-radius:8px;padding:12px;">
-          <div style="font-size:9px;color:var(--red);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Flagged decisions</div>
-          <div style="font-size:24px;font-weight:600;color:var(--red);font-family:var(--mono)">${flagged}</div>
-        </div>
-        <div style="background:var(--blue-l);border:1px solid var(--blue-b);border-radius:8px;padding:12px;">
-          <div style="font-size:9px;color:var(--blue);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Total decisions</div>
-          <div style="font-size:24px;font-weight:600;color:var(--blue);font-family:var(--mono)">${total}</div>
-        </div>
-      </div>
-      ${rb.high || rb.medium ? `<div>
-        <div style="font-size:11px;font-weight:600;color:var(--t2);margin-bottom:6px;">Risk breakdown</div>
-        <div style="display:flex;gap:8px;">
-          ${rb.high ? `<span class="badge b-high">${rb.high} high</span>` : ''}
-          ${rb.medium ? `<span class="badge b-med">${rb.medium} medium</span>` : ''}
-          ${rb.low ? `<span class="badge b-low">${rb.low} low</span>` : ''}
-        </div>
-      </div>` : ''}
-      <div style="padding:10px;border-radius:7px;border:1px solid var(--border);background:var(--s2);">
-        <div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Verdict</div>
-        <div style="font-size:12px;font-weight:600;color:${verdictColor}">${esc(verdict)}</div>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button onclick="openPrintableReport()" style="flex:1;min-width:120px;background:var(--teal);color:#fff;border:none;border-radius:8px;padding:9px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--sans);">📄 Export Official Report (PDF/HTML)</button>
-        <button onclick="downloadReportJSON()" style="min-width:140px;background:var(--s2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--sans);">↓ Raw JSON</button>
-      </div>
-    </div>`;
-    }
-
-    function renderDrift(data) {
-      const el = document.getElementById('driftContent');
-      if (data && data.detail) {
-        el.innerHTML = `<div class="empty-box"><div class="empty-icon">🔐</div><div class="empty-text" style="max-width:360px">${esc(String(data.detail))}<br><br><span style="font-size:11px;color:var(--t3)">Use an API key that exists in Supabase <code>api_keys</code>, or set <code>DEV_API_KEY</code> on the server to match your dashboard key.</span></div></div>`;
-        document.getElementById('statDrift').textContent = 'auth error';
-        return;
-      }
-      if (!data || typeof data.status !== 'string') {
-        el.innerHTML = `<div class="empty-box"><div class="empty-text">Unexpected response — check backend URL and API key.</div></div>`;
-        document.getElementById('statDrift').textContent = '—';
-        return;
-      }
-      if (data.status === 'insufficient_data') {
-        el.innerHTML = `<div class="empty-box"><div class="empty-icon">📊</div><div class="empty-text">${data.message}</div></div>`;
-        document.getElementById('statDrift').textContent = '—';
-        return;
-      }
-      const tw = data.this_week || {};
-      const lw = data.last_week || {};
-      const sev = data.severity;
-      const sevColor = sev === 'high' ? 'var(--red)' : sev === 'medium' ? 'var(--amber)' : 'var(--teal)';
-      document.getElementById('statDrift').innerHTML = `<span style="color:${sevColor};font-size:12px;font-weight:600">${data.status === 'stable' ? '✓ stable' : '⚠ drift'}</span>`;
-
-      el.innerHTML = `<div style="padding:14px;display:flex;flex-direction:column;gap:12px;">
-    <div style="display:flex;gap:8px;align-items:center;">
-      <span class="badge ${sev === 'high' ? 'b-high' : sev === 'medium' ? 'b-med' : 'b-low'}">${data.status}</span>
-      <span style="font-size:11px;color:var(--t3)">${data.findings?.length || 0} finding${data.findings?.length === 1 ? '' : 's'}</span>
     </div>
-    <div>
-      <div class="drift-stat"><span class="drift-key">Total decisions</span><div class="drift-vals"><div class="drift-val"><div class="label">last week</div><div class="num">${lw.total || 0}</div></div><div class="drift-val"><div class="label">this week</div><div class="num">${tw.total || 0}</div></div></div></div>
-      <div class="drift-stat"><span class="drift-key">Approval rate</span><div class="drift-vals"><div class="drift-val"><div class="label">last week</div><div class="num">${lw.approval_rate || 0}%</div></div><div class="drift-val"><div class="label">this week</div><div class="num">${tw.approval_rate || 0}%</div></div></div></div>
-      <div class="drift-stat"><span class="drift-key">Flag rate</span><div class="drift-vals"><div class="drift-val"><div class="label">last week</div><div class="num">${lw.flag_rate || 0}%</div></div><div class="drift-val"><div class="label">this week</div><div class="num">${tw.flag_rate || 0}%</div></div></div></div>
-      <div class="drift-stat" style="border:none"><span class="drift-key">Avg latency</span><div class="drift-vals"><div class="drift-val"><div class="label">last week</div><div class="num">${lw.avg_latency_ms || 0}ms</div></div><div class="drift-val"><div class="label">this week</div><div class="num">${tw.avg_latency_ms || 0}ms</div></div></div></div>
+
+    <!-- Manual Log Modal -->
+    <div id="manual-log-modal" class="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-[#0b0e14] border border-white/10 w-full max-w-5xl rounded-[2rem] overflow-hidden flex flex-col md:flex-row h-[90vh] shadow-2xl shadow-blue-500/10">
+            <!-- Left Side: Form -->
+            <div class="flex-1 flex flex-col min-w-0 border-r border-white/5">
+                <div class="p-8 border-b border-white/5 bg-gradient-to-r from-blue-600/10 to-transparent">
+                    <div id="ml-persona-banner" class="flex items-center space-x-3 mb-2 px-3 py-1.5 bg-blue-500/10 rounded-full w-fit border border-blue-500/20">
+                        <span class="text-[10px] font-black uppercase tracking-tighter text-blue-400">🤖 Active Agent: Fraud Bot</span>
+                    </div>
+                    <h3 class="text-2xl font-bold outfit">Manual Decision Submission</h3>
+                </div>
+                
+                <form id="manual-log-form" class="flex-1 p-8 overflow-y-auto custom-scrollbar space-y-6">
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="col-span-2">
+                             <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Select Agent Persona</label>
+                             <select id="ml-agent-select" onchange="updateManualFormPersona()" class="w-full bg-[#161b22] border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-blue-500">
+                                <!-- Dynamic Agents -->
+                             </select>
+                        </div>
+                        
+                        <!-- Dynamic Fields Container -->
+                        <div id="ml-dynamic-fields" class="col-span-2 grid grid-cols-2 gap-6">
+                            <!-- Injected by JS -->
+                        </div>
+
+                        <div class="col-span-2">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Decision Reasoning</label>
+                            <textarea id="ml-reasoning" rows="3" class="w-full bg-[#161b22] border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                        </div>
+                    </div>
+
+                    <div id="ml-error" class="hidden p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-xs rounded-xl"></div>
+                    
+                    <div class="pt-4">
+                        <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">RBI Clause Checklist</p>
+                        <div id="ml-clause-checklist" class="grid grid-cols-1 gap-2">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+                </form>
+
+                <div class="p-8 border-t border-white/5 bg-white/5 flex space-x-4">
+                    <button onclick="closeManualLog()" class="flex-1 py-4 glass text-white rounded-2xl font-bold text-sm">Cancel</button>
+                    <button type="submit" form="manual-log-form" class="flex-[2] py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-sm shadow-lg shadow-blue-600/30">Submit Decision</button>
+                </div>
+            </div>
+
+            <!-- Right Side: Live Preview -->
+            <div class="w-full md:w-[380px] bg-[#0d1117] p-8 flex flex-col">
+                <h4 class="font-bold outfit mb-8 text-sm uppercase tracking-widest text-gray-500">Live Decision Preview</h4>
+                
+                <div id="ml-preview-card" class="card p-8 bg-gradient-to-br from-blue-600/5 to-transparent border-blue-500/10 relative overflow-hidden group">
+                    <div class="absolute -right-4 -top-4 w-24 h-24 bg-blue-500/10 blur-3xl rounded-full group-hover:bg-blue-500/20 transition-all"></div>
+                    
+                    <div id="ml-preview-content">
+                        <!-- Injected by JS based on persona -->
+                    </div>
+
+                    <div class="mt-10 pt-6 border-t border-white/5">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-[10px] uppercase font-bold text-gray-500">Predicted Risk</span>
+                            <span id="ml-preview-risk" class="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 text-[10px] font-black rounded uppercase">Low Risk</span>
+                        </div>
+                        <div id="ml-risk-bar" class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                            <div class="h-full bg-emerald-500 w-[20%] transition-all duration-500"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-auto pt-8">
+                    <div class="p-4 rounded-2xl bg-white/5 border border-white/5">
+                        <p class="text-[10px] text-gray-500 mb-2 uppercase font-black tracking-tighter">SDK Integration</p>
+                        <p class="text-[11px] text-gray-400 leading-relaxed italic">"Gateway automatically intercepts decisions from workers and enforces these rules before execution."</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    ${data.findings?.length ? `<div>
-      <div style="font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Findings</div>
-      ${data.findings.map(f => `<div class="finding-item vi-med" style="background:var(--amber-l);border:1px solid var(--amber-b);color:var(--amber);margin-bottom:5px">${esc(f)}</div>`).join('')}
-    </div>` : `<div class="finding-item" style="background:var(--teal-l);border:1px solid var(--teal-b);color:var(--teal)">✓ No significant behavioral changes detected</div>`}
-  </div>`;
-    }
 
-    function renderStructuring(data) {
-      const el = document.getElementById('structuringContent');
-      if (data.status === 'clean') {
-        el.innerHTML = `<div class="struct-clean">✓ No structuring patterns detected in recent logs</div>`;
-        return;
-      }
-      const sev = data.severity === 'high' ? 'b-high' : 'b-med';
-      el.innerHTML = `<div class="struct-alert">
-    <div class="struct-badge"><span class="badge ${sev}">⚠ ${data.pattern || 'pattern detected'}</span></div>
-    <div class="struct-desc">${esc(data.description || '')}</div>
-    <div class="struct-ref">${esc(data.rbi_reference || '')}</div>
-    ${data.flagged_decisions?.length ? `<div style="font-size:11px;color:var(--t3)">Flagged decision IDs: ${data.flagged_decisions.map(id => `<span class="mono">${esc(String(id).substring(0, 12))}…</span>`).join(', ')}</div>` : ''}
-  </div>`;
-    }
+    <!-- Onboarding Backdrop -->
+    <div id="onboarding-modal" class="fixed inset-0 bg-[#080a11] z-[100] hidden flex items-center justify-center p-6">
+         <div class="max-w-xl w-full text-center">
+             <div class="mb-10 inline-flex items-center space-x-2 px-4 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-[10px] font-bold text-blue-400 uppercase tracking-widest">
+                <span>Welcome to AgentBridge</span>
+             </div>
+             <h1 class="text-4xl font-bold outfit mb-4 text-white">Let's get your compliance set up.</h1>
+             <p class="text-gray-400 text-sm mb-12">Complete these four steps to start monitoring your AI agents under RBI's FREE-AI framework.</p>
+             
+             <div class="space-y-4 text-left">
+                 <div class="p-6 card group cursor-pointer hover:bg-white/5 transition-all">
+                    <div class="flex items-center space-x-6">
+                        <div class="w-10 h-10 rounded-full border-2 border-white/10 flex items-center justify-center font-bold text-gray-500 group-hover:border-blue-500 group-hover:text-blue-500 transition-all">1</div>
+                        <div class="flex-1">
+                            <h4 class="font-bold text-white mb-0.5">Register your first agent</h4>
+                            <p class="text-xs text-gray-500">Add labels for your fraud-bot or loan-bot.</p>
+                        </div>
+                        <svg class="h-5 w-5 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </div>
+                 </div>
+                 <div class="p-6 card opacity-60">
+                    <div class="flex items-center space-x-6">
+                        <div class="w-10 h-10 rounded-full border-2 border-white/10 flex items-center justify-center font-bold text-gray-500">2</div>
+                        <div class="flex-1">
+                            <h4 class="font-bold text-white mb-0.5">Generate your SDK API Key</h4>
+                            <p class="text-xs text-gray-500">Integrate with your FastAPI or Express worker.</p>
+                        </div>
+                    </div>
+                 </div>
+                 <!-- ... more ... -->
+             </div>
+             
+             <button onclick="closeOnboarding()" class="mt-12 text-gray-500 text-sm hover:text-white transition-all">Skip for now, I know my way around &rarr;</button>
+         </div>
+    </div>
 
-    async function fetchAll() {
-      const key = getKey();
-      const backend = getBackend();
-      if (!key) { toast('Please enter an API key'); return; }
-      const btn = document.getElementById('fetchBtn');
-      btn.disabled = true; btn.textContent = '⟳ Fetching...';
-      setLive('loading...');
-      try {
-        const [logsRes, incRes, reportRes] = await Promise.allSettled([
-          fetch(`${backend}/logs?api_key=${encodeURIComponent(key)}`),
-          fetch(`${backend}/incidents?api_key=${encodeURIComponent(key)}`),
-          fetch(`${backend}/report?api_key=${encodeURIComponent(key)}`)
-        ]);
-        let authHint = '';
-        if (logsRes.status === 'fulfilled' && logsRes.value.ok) {
-          allLogs = await logsRes.value.json();
-          renderLogTable(allLogs, 'logTableWrap', 'logCount');
-          updateStats(allLogs);
-        } else if (logsRes.status === 'fulfilled' && !logsRes.value.ok) {
-          const msg = await readErrorBody(logsRes.value);
-          authHint = msg;
-          toast(`Logs: ${logsRes.value.status} — ${msg}`, 7000);
-          allLogs = [];
-          renderLogTable([], 'logTableWrap', 'logCount');
-          updateStats([]);
-        }
-        if (incRes.status === 'fulfilled' && incRes.value.ok) {
-          allIncidents = await incRes.value.json();
-          renderLogTable(allIncidents, 'incidentTableWrap', 'incidentCount');
-        } else if (incRes.status === 'fulfilled' && !incRes.value.ok && !authHint) {
-          toast(`Incidents: ${incRes.value.status} — ${await readErrorBody(incRes.value)}`, 6000);
-        }
-        if (reportRes.status === 'fulfilled' && reportRes.value.ok) {
-          const report = await reportRes.value.json();
-          renderReport(report);
-          updateRBIStatus(report);
-        }
-        setLive(`${allLogs.length} logs`);
-        if (allLogs.length === 0 && authHint) {
-          toast('0 logs — fix API key (Supabase api_keys or DEV_API_KEY on server) or backend URL (.onrender.com)', 8000);
-        } else {
-          toast(`✓ Loaded ${allLogs.length} logs · ${allIncidents.length} incidents`);
-        }
-        updatePersonaVisibility();
-      } catch (e) {
-        if (e.message && (e.message.includes('Failed to fetch') || e.message.includes('NetworkError'))) {
-          toast('Backend is waking up — please wait ~60 seconds and try again (Render sleep mode)', 5000);
-          setLive('sleeping...');
-          document.getElementById('logTableWrap').innerHTML = '<div class="empty-box"><div class="empty-icon">😴</div><div class="empty-text">Backend is waking up from sleep mode. Wait ~60 seconds and click Fetch Data again.</div></div>';
-        } else {
-          toast('Connection failed — check backend URL');
-          setLive('error');
-        }
-      }
-      btn.disabled = false;
-      btn.innerHTML = '<span>↓</span> Fetch Data';
-    }
-
-    async function fetchIncidents() {
-      const key = getKey(); const backend = getBackend();
-      if (!key) return;
-      try {
-        const res = await fetch(`${backend}/incidents?api_key=${encodeURIComponent(key)}`);
-        allIncidents = await res.json();
-        renderLogTable(allIncidents, 'incidentTableWrap', 'incidentCount');
-        toast(`✓ ${allIncidents.length} incidents loaded`);
-      } catch (e) { toast('Failed to load incidents'); }
-    }
-
-    async function fetchReport() {
-      const key = getKey(); const backend = getBackend();
-      if (!key) return;
-      try {
-        const res = await fetch(`${backend}/report?api_key=${encodeURIComponent(key)}`);
-        const report = await res.json();
-        renderReport(report);
-        updateRBIStatus(report);
-        toast('✓ Report loaded');
-      } catch (e) { toast('Failed to load report'); }
-    }
-
-    async function fetchDrift() {
-      const key = getKey(); const backend = getBackend();
-      if (!key) { toast('Enter API key first'); return; }
-      document.getElementById('driftContent').innerHTML = `<div class="empty-box"><div class="empty-text">Analysing...</div></div>`;
-      try {
-        const res = await fetch(`${backend}/drift?api_key=${encodeURIComponent(key)}`);
-        const data = await res.json();
-        if (!res.ok) {
-          renderDrift({ detail: data.detail || data.message || res.statusText });
-          toast(`Drift: ${res.status}`, 5000);
-          return;
-        }
-        renderDrift(data);
-        toast('✓ Drift analysis complete');
-      } catch (e) { toast('Drift analysis failed — check backend'); document.getElementById('driftContent').innerHTML = `<div class="empty-box"><div class="empty-text">Failed to connect</div></div>`; }
-    }
-
-    async function fetchStructuring() {
-      const key = getKey(); const backend = getBackend();
-      if (!key) { toast('Enter API key first'); return; }
-      document.getElementById('structuringContent').innerHTML = `<div class="empty-box"><div class="empty-text">Scanning...</div></div>`;
-      try {
-        const res = await fetch(`${backend}/structuring?api_key=${encodeURIComponent(key)}`);
-        const data = await res.json();
-        if (!res.ok) {
-          document.getElementById('structuringContent').innerHTML = `<div class="empty-box"><div class="empty-text">${esc(String(data.detail || data.message || res.status))}</div></div>`;
-          toast(`Structuring: ${res.status}`, 5000);
-          return;
-        }
-        renderStructuring(data);
-        toast('✓ Structuring scan complete');
-      } catch (e) { toast('Structuring scan failed'); document.getElementById('structuringContent').innerHTML = `<div class="empty-box"><div class="empty-text">Failed to connect</div></div>`; }
-    }
-
-    async function sendQuery() {
-      const key = getKey(); const backend = getBackend();
-      const question = document.getElementById('queryInput').value.trim();
-      if (!question) { toast('Enter a question first'); return; }
-      if (!key) { toast('Enter API key first'); return; }
-      const btn = document.getElementById('queryBtn');
-      btn.disabled = true; btn.textContent = 'Thinking...';
-      const ans = document.getElementById('queryAnswer');
-      ans.style.display = 'block'; ans.classList.add('visible');
-      ans.textContent = 'Analysing your logs...';
-      try {
-        const res = await fetch(`${backend}/query`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-API-Key': key },
-          body: JSON.stringify({ api_key: key, question })
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          ans.textContent = data.detail || data.message || `Error ${res.status}`;
-          toast(`Query failed (${res.status})`, 5000);
-          btn.disabled = false; btn.textContent = 'Ask →';
-          return;
-        }
-        ans.textContent = data.answer || 'No answer returned (no logs or empty result)';
-        toast(`✓ Analysed ${data.logs_analyzed || 0} logs`);
-      } catch (e) { ans.textContent = 'Query failed — check backend URL, API key, and GROQ_API_KEY on server for NL query'; toast('Query failed'); }
-      btn.disabled = false; btn.textContent = 'Ask →';
-    }
-
-    function setQuery(el) {
-      document.getElementById('queryInput').value = el.textContent;
-    }
-
-    async function downloadReportJSON() {
-      const key = getKey();
-      const backend = getBackend();
-      if (!key) { toast('Enter API key first'); return; }
-      try {
-        toast('Preparing download…');
-        const res = await fetch(`${backend}/report/download?api_key=${encodeURIComponent(key)}&cleaned=true`);
-        if (res.status === 404) {
-          const body = await res.json();
-          toast(body.message || 'No data yet for this api_key');
-          return;
-        }
-        if (!res.ok) { toast('Download failed — server error'); return; }
-        const disposition = res.headers.get('Content-Disposition') || '';
-        const match = disposition.match(/filename="?([^";\n]+)"?/);
-        const filename = match ? match[1] : `agentbridge-report-${new Date().toISOString().slice(0, 10)}-cleaned.json`;
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = filename;
-        document.body.appendChild(a); a.click(); a.remove();
-        URL.revokeObjectURL(url);
-        toast('✓ Report downloaded');
-      } catch (e) { toast('Download failed — check connection'); }
-    }
-
-    function openPrintableReport() {
-      const key = getKey();
-      const backend = getBackend();
-      if (!key) { toast('Enter API key first'); return; }
-      window.open(`${backend}/report/html?api_key=${encodeURIComponent(key)}`, '_blank');
-    }
-
-    async function submitManualLog() {
-      const key = getKey();
-      const agent = document.getElementById('ml-agent').value;
-      const action = document.getElementById('ml-action').value;
-      const confidence = parseFloat(document.getElementById('ml-confidence').value) || 0.85;
-      const reasoning = document.getElementById('ml-reasoning').value;
-      const extraStr = document.getElementById('ml-extra').value;
-      const kycValue = document.getElementById('ml-kyc').value === 'true';
-
-      let input = {};
-      if (currentPersona === 'fraud') {
-        input = {
-          amount: parseFloat(document.getElementById('ml-amount').value) || 0,
-          transaction_type: document.getElementById('ml-tx-type').value,
-          kyc_verified: kycValue,
-          pep_status: document.getElementById('ml-pep').value === 'true',
-          sender_account: "ACC_" + Math.floor(Math.random() * 10000),
-          receiver_account: "ACC_" + Math.floor(Math.random() * 10000)
-        };
-      } else {
-        input = {
-          amount: parseFloat(document.getElementById('ml-loan-amount').value) || 0,
-          credit_score: parseInt(document.getElementById('ml-credit').value) || 0,
-          annual_income: parseFloat(document.getElementById('ml-income').value) || 0,
-          dti_ratio: parseFloat(document.getElementById('ml-dti').value) || 0.0,
-          employment_years: parseInt(document.getElementById('ml-emp').value) || 0,
-          kyc_verified: kycValue,
-          loan_type: "personal"
-        };
-      }
-
-      try {
-        if (extraStr.trim()) {
-          const extra = JSON.parse(extraStr);
-          Object.assign(input, extra);
-        }
-      } catch (e) {
-        toast('Invalid JSON in Extra Fields');
-        return;
-      }
-
-      const payload = {
-        api_key: key,
-        agent_id: agent,
-        agent_name: currentPersona === 'fraud' ? 'fraudbot' : 'loanbot',
-        action_type: action,
-        reasoning: reasoning,
-        confidence: confidence,
-        input: input,
-        output: {},
-        user_id: "demo_user_" + Math.floor(Math.random() * 100),
-        session_id: "session_" + Math.floor(Math.random() * 1000)
-      };
-
-      const btn = event.target;
-      btn.disabled = true; btn.textContent = '⟳ Processing...';
-
-      try {
-        const res = await callApi('/decide', 'POST', payload);
-        if (res.error) throw new Error(res.error);
-
-        const el = document.getElementById('ml-result');
-        const verdict = res.compliance_status || res.verdict || res.status || (res.risk_level === 'low' ? 'ALLOW' : 'REJECT') || 'UNKNOWN';
-        const isSuccess = verdict.toLowerCase().includes('allow') || verdict.toLowerCase().includes('approve') || verdict.toLowerCase().includes('clean');
-        const verdictColor = isSuccess ? 'var(--green)' : (verdict.toLowerCase().includes('reject') ? 'var(--red)' : 'var(--amber)');
-        const riskColor = res.risk_level === 'high' || res.risk_level === 'critical' ? 'var(--red)' : res.risk_level === 'medium' ? 'var(--amber)' : 'var(--green)';
-
-        el.style.display = 'block';
-        el.style.background = 'var(--s2)';
-        el.style.border = `1px solid var(--border)`;
-        el.innerHTML = `
-      <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;">
-        <span style="font-size:20px;font-weight:800;color:${verdictColor};font-family:var(--mono)">${verdict.toUpperCase()}</span>
-        <span style="font-size:12px;color:${riskColor};font-weight:700;background:var(--surface);padding:4px 10px;border-radius:6px;border:1px solid var(--border)">Risk: ${res.risk_level || '—'}</span>
-        <span style="font-size:12px;color:var(--t3);font-family:var(--mono)">Score: ${res.risk_score != null ? res.risk_score.toFixed(3) : '—'}</span>
-      </div>
-      <div style="margin-bottom:12px;">
-        <span style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Monitor Analysis</span>
-        <div style="margin-top:6px;font-size:13px;color:var(--text);line-height:1.6;background:var(--surface);padding:12px;border-radius:8px;border:1px solid var(--border)">${esc(res.ai_explanation || res.explanation || 'Analyzed against latest compliance policies.')}</div>
-      </div>
-      ${res.violations?.length ? `<div><span style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Policy Violations</span><div style="margin-top:6px;display:flex;flex-direction:column;gap:6px">${res.violations.map(v => `<div style="font-size:11px;padding:8px 12px;background:var(--red-l);color:var(--red);border-radius:6px;border:1px solid var(--red-b)">${esc(v)}</div>`).join('')}</div></div>` : ''}
-      <div style="margin-top:12px;font-size:10px;color:var(--t4);font-family:var(--mono)">decision_id: ${esc(res.decision_id || '—')}</div>
-    `;
-
-        toast('✓ Decision Processed: ' + verdict, 4000);
-        setTimeout(fetchAll, 600);
-      } catch (e) {
-        const el = document.getElementById('ml-result');
-        el.style.display = 'block';
-        el.style.background = 'var(--amber-l)';
-        el.style.border = '1px solid var(--amber-b)';
-        el.innerHTML = `
-      <div style="font-size:14px;font-weight:700;color:var(--amber);margin-bottom:8px">REQUEST FAILED</div>
-      <div style="font-size:12px;line-height:1.5;color:var(--text)">${esc(String(e.message))}</div>`;
-        toast(`Gateway error`, 6000);
-        btn.disabled = false; btn.textContent = '▶ Submit to Compliance Gateway';
-        return;
-      }
-      btn.disabled = false; btn.textContent = '▶ Submit to Compliance Gateway';
-    }
-
-
-    function updatePersonaVisibility() {
-      const key = getKey();
-      const f = document.getElementById('btn-persona-fraud');
-      const l = document.getElementById('btn-persona-loan');
-      if (!f || !l) return;
-
-      if (key === 'demo_key_001') {
-        f.style.display = 'flex';
-        l.style.display = 'none';
-        setMLPreset('fraud');
-      } else if (key === 'loan_key_999') {
-        f.style.display = 'none';
-        l.style.display = 'flex';
-        setMLPreset('loan');
-      } else {
-        f.style.display = 'none';
-        l.style.display = 'none';
-      }
-    }
-
-    function setMLPreset(type) {
-      currentPersona = type;
-      const agentField = document.getElementById('ml-agent');
-      const actionField = document.getElementById('ml-action');
-
-      const f1 = document.getElementById('fraud-fields');
-      const l1 = document.getElementById('loan-fields');
-      const f2 = document.getElementById('fraud-fields-2');
-      const l2 = document.getElementById('loan-fields-2');
-      const pep = document.getElementById('pep-wrap');
-
-      if (type === 'fraud') {
-        agentField.value = 'fraudbot';
-        actionField.value = 'approve';
-        if (f1) f1.style.display = 'contents';
-        if (l1) l1.style.display = 'none';
-        if (f2) f2.style.display = 'block';
-        if (l2) l2.style.display = 'none';
-        if (pep) pep.style.display = 'block';
-        toast('Switched to FraudBot schema');
-      } else {
-        agentField.value = 'loanbot';
-        actionField.value = 'loan';
-        // Other key — show both options as fallback
-        f.style.display = 'block'; l.style.display = 'block';
-      }
-    }
-
-    // Auto-fetch on load
-    window.addEventListener('load', () => {
-      // Force same-origin on load to avoid stale browser-restored backend URLs.
-      const backendInput = document.getElementById('backendInput');
-      if (backendInput) {
-        if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
-          backendInput.value = window.location.origin.replace(/\/$/, '');
-        } else {
-          backendInput.value = '';
-        }
-      }
-      const key = getKey();
-      updatePersonaVisibility();
-      if (key) fetchAll();
-    });
-  </script>
+    <!-- Scripts -->
+    <script src="dashboard.js"></script>
 </body>
-
 </html>

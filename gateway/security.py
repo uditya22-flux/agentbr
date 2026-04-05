@@ -1,79 +1,95 @@
 """
 gateway/security.py
-API key validation, rate limiting, request authentication.
-No open endpoints — every request requires a valid key.
+B2B SaaS Multi-tenant Security:
+- Validates JWT for dashboard users (/api/*)
+- Validates API Keys for AI agents (/decide, /log)
+- Enforces Rate Limiting per agent
+- Injects org_id into the request state
 """
 from fastapi import Request, HTTPException
 from fastapi.responses import JSONResponse
-
 import time
 import os
+import hashlib
 from collections import defaultdict
 from database import supabase
+from utils.auth_utils import decode_access_token, hash_api_key
 
-# In-memory rate limiter (use Redis in production)
+# In-memory rate limiter per API key hash
 _request_counts: dict = defaultdict(list)
-RATE_LIMIT_PER_MINUTE = int(os.environ.get("RATE_LIMIT_PER_MINUTE", "60"))
-RATE_WINDOW_SECONDS = 60
+DEFAULT_RATE_LIMIT = int(os.environ.get("RATE_LIMIT_PER_DAY", "1000"))
 
-
-def _is_rate_limited(api_key: str) -> bool:
+def _is_rate_limited(api_key_hash: str) -> bool:
+    """Enforce daily rate limits (MVP is simple, but real app should use Redis)."""
     now = time.time()
-    window_start = now - RATE_WINDOW_SECONDS
-    _request_counts[api_key] = [t for t in _request_counts[api_key] if t > window_start]
-    if len(_request_counts[api_key]) >= RATE_LIMIT_PER_MINUTE:
+    day_ago = now - 86400
+    # Clean old logs
+    _request_counts[api_key_hash] = [t for t in _request_counts[api_key_hash] if t > day_ago]
+    if len(_request_counts[api_key_hash]) >= DEFAULT_RATE_LIMIT:
         return True
-    _request_counts[api_key].append(now)
+    _request_counts[api_key_hash].append(now)
     return False
 
-
-def _validate_api_key(api_key: str) -> bool:
-    """Check api_key exists in Supabase api_keys table."""
-    if not api_key:
-        return False
-    dev_keys = os.environ.get("DEV_API_KEY", "")
-    if dev_keys and api_key in [k.strip() for k in dev_keys.split(",")]:
-        return True
+def _get_agent_by_api_key(api_key: str):
+    """Retrieve agent and org info by hashed api_key."""
+    key_hash = hash_api_key(api_key)
     try:
-        result = supabase.table("api_keys")\
-            .select("api_key, active")\
-            .eq("api_key", api_key)\
-            .eq("active", True)\
+        result = supabase.table("agents")\
+            .select("id, org_id, status")\
+            .eq("api_key_hash", key_hash)\
+            .eq("status", "active")\
             .limit(1)\
             .execute()
-        return bool(result.data)
+        
+        if result.data:
+            return result.data[0]
+        return None
     except Exception:
-        return False
-
+        return None
 
 async def auth_middleware(request: Request, call_next):
     """
-    Applied to all routes except /health and /.
-    Validates API key and enforces rate limits.
+    Applied to all routes except public paths.
+    Routes starting with /api/ (Dashboard) expect Authorization: Bearer <JWT>
+    Routes for logging (/decide, /manual_log) expect X-API-Key: <key>
     """
-    skip_paths = {"/", "/health", "/favicon.ico", "/docs", "/openapi.json"}
-    if request.url.path in skip_paths:
+    path = request.url.path
+    # Public routes
+    if path in {"/", "/login.html", "/signup.html", "/health", "/favicon.ico", "/docs", "/openapi.json"} or path.startswith("/static/"):
         return await call_next(request)
 
-    # Extract API key from header or query param
-    api_key = request.headers.get("X-API-Key") or request.headers.get("x-api-key") or request.query_params.get("api_key")
+    # 1. Dashboard API Auth (JWT)
+    if path.startswith("/api/"):
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            return JSONResponse(status_code=401, content={"detail": "Bearer token required"})
+        
+        token = auth_header.split(" ")[1]
+        payload = decode_access_token(token)
+        if not payload:
+            return JSONResponse(status_code=401, content={"detail": "Invalid or expired session"})
+        
+        # Inject context into request state
+        request.state.user_id = payload.get("sub")
+        request.state.org_id = payload.get("org_id")
+        return await call_next(request)
 
-    if not api_key:
-        return JSONResponse(
-            status_code=401,
-            content={"detail": "X-API-Key header or api_key query parameter required"}
-        )
+    # 2. SDK / Agent Auth (API Key)
+    # These routes are usually /decide, /log, etc.
+    api_key = request.headers.get("X-API-Key") or request.query_params.get("api_key")
+    
+    if api_key:
+        agent_info = _get_agent_by_api_key(api_key)
+        if not agent_info:
+            return JSONResponse(status_code=403, content={"detail": "Invalid or inactive API key"})
+        
+        key_hash = hash_api_key(api_key)
+        if _is_rate_limited(key_hash):
+            return JSONResponse(status_code=429, content={"detail": "Daily rate limit exceeded"})
+        
+        request.state.agent_id = agent_info["id"]
+        request.state.org_id = agent_info["org_id"]
+        return await call_next(request)
 
-    if not _validate_api_key(api_key):
-        return JSONResponse(
-            status_code=403,
-            content={"detail": "Invalid or inactive API key"}
-        )
-
-    if _is_rate_limited(api_key):
-        return JSONResponse(
-            status_code=429,
-            content={"detail": f"Rate limit exceeded: {RATE_LIMIT_PER_MINUTE} requests/minute"}
-        )
-
-    return await call_next(request)
+    # Fallback to 401 if no auth found
+    return JSONResponse(status_code=401, content={"detail": "Authentication required"})

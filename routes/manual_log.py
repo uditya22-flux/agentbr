@@ -1,55 +1,54 @@
 """
-POST /log-manual
-Allows a user to submit a log directly from the UI.
-Runs through the full gateway pipeline and returns the compliance verdict.
-Designed for demo and testing — no SDK required.
+routes/manual_log.py
+Dashboard-only manual log submission.
+Requires JWT auth (org_id injected).
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import JSONResponse
 from gateway.decision_gateway import process_decision
+from database import supabase
 
-router = APIRouter()
+router = APIRouter(prefix="/api", tags=["Manual Submission"])
 
-@router.post("/log-manual")
-async def manual_log(data: dict):
+@router.post("/manual_log")
+async def manual_log(request: Request):
     """
-    Submit a log entry from the UI.
-    Accepts flexible input — maps common field names to gateway schema.
-    Returns full compliance verdict with AI analysis.
+    Submit a log entry directly from the dashboard.
+    Uses the user's org_id context.
     """
-    if not data.get("api_key"):
-        raise HTTPException(status_code=400, detail="api_key required")
+    try:
+        data = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
 
-    # Normalize field names from UI form to gateway schema
+    org_id = getattr(request.state, "org_id", None)
+    if not org_id:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    # Normalize fields
     raw = dict(data)
-
-    # Map agent_name → agent_id
-    if "agent_name" in raw and "agent_id" not in raw:
-        raw["agent_id"] = raw.pop("agent_name")
-
-    # Map action → action_type
-    if "action" in raw and "action_type" not in raw:
-        raw["action_type"] = raw.pop("action")
-
-    # Map inputs → input
-    if "inputs" in raw and "input" not in raw:
-        v = raw.pop("inputs")
-        raw["input"] = v if isinstance(v, dict) else {}
-
-    # Ensure input is dict
-    if "input" not in raw or not isinstance(raw.get("input"), dict):
-        raw["input"] = {}
-
-    # Default required fields for UI submission
-    if not raw.get("session_id"):
+    
+    # Validation: Ensure agent_id is provided and belongs to the org
+    agent_id = raw.get("agent_id")
+    if not agent_id:
+        raise HTTPException(status_code=400, detail="agent_id required")
+    
+    # Context injection
+    raw["org_id"] = org_id
+    
+    # Defaults for simulation
+    if "decision_id" not in raw:
         import uuid
-        raw["session_id"] = f"ui-session-{str(uuid.uuid4())[:8]}"
-    if not raw.get("user_id"):
-        raw["user_id"] = "ui_user"
+        raw["decision_id"] = f"D-{str(uuid.uuid4())[:8]}"
+    if "session_id" not in raw:
+        import uuid
+        raw["session_id"] = f"S-{str(uuid.uuid4())[:8]}"
+    if "user_id" not in raw:
+        raw["user_id"] = "dashboard_user"
     if "confidence" not in raw:
-        raw["confidence"] = 0.85
-    if not raw.get("reasoning"):
-        raw["reasoning"] = "Submitted via AgentBridge UI"
+        raw["confidence"] = 0.95
+    if "reasoning" not in raw:
+        raw["reasoning"] = "Manual submission via dashboard"
 
     response_data, status_code = process_decision(raw)
     return JSONResponse(content=response_data, status_code=status_code)

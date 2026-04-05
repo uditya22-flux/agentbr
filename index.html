@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgentBridge | B2B AI Compliance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #080a0f; color: #e1e7ef; }
+        .outfit { font-family: 'Outfit', sans-serif; }
+        .gradient-text { background: linear-gradient(90deg, #4fd1c5, #63b3ed); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .glass { background: rgba(18, 24, 38, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+    <div class="text-center p-8 glass rounded-3xl max-w-md w-full animate-in fade-in duration-700">
+        <div class="flex justify-center mb-6">
+            <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+        </div>
+        <h1 class="text-3xl font-bold outfit mb-2">Agent<span class="gradient-text">Bridge</span></h1>
+        <p class="text-gray-400 mb-8">B2B SaaS compliance platform for Indian FinTechs monitoring under RBI's FREE-AI framework.</p>
+        
+        <div id="auth-actions" class="space-y-4">
+            <a href="login.html" class="block w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-all">Log In</a>
+            <a href="signup.html" class="block w-full py-3 glass hover:bg-white/10 text-white rounded-xl font-semibold transition-all border border-blue-500/30">Get Started (Signup)</a>
+        </div>
+    </div>
+
+    <script>
+        // Redirect if already logged in
+        if (localStorage.getItem("token")) {
+            window.location.href = "dashboard.html";
+        }
+    </script>
+</body>
+</html>
