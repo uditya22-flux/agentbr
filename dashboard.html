@@ -1216,6 +1216,8 @@ function setMLPreset(type) {
   currentPersona = type;
   const agentField = document.getElementById('ml-agent');
   const actionField = document.getElementById('ml-action');
+  const f = document.getElementById('btn-persona-fraud');
+  const l = document.getElementById('btn-persona-loan');
   
   const f1 = document.getElementById('fraud-fields');
   const l1 = document.getElementById('loan-fields');
@@ -1235,8 +1237,12 @@ function setMLPreset(type) {
   } else {
     agentField.value = 'loanbot';
     actionField.value = 'loan';
-    // Other key — show both options as fallback
-    f.style.display = 'block'; l.style.display = 'block';
+    if (f1) f1.style.display = 'none';
+    if (l1) l1.style.display = 'block';
+    if (f2) f2.style.display = 'none';
+    if (l2) l2.style.display = 'block';
+    if (pep) pep.style.display = 'none';
+    toast('Switched to LoanBot schema');
   }
 }
 
