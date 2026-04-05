@@ -435,8 +435,8 @@ tbody tr:hover{background:var(--s2)}
       </div>
       <div style="padding:20px;display:flex;flex-direction:column;gap:14px;">
         <div style="display:flex; gap:10px; margin-bottom:10px;">
-          <button onclick="setMLPreset('fraud')" class="preset-btn" style="flex:1; background:var(--blue-l); border:1px solid var(--blue-b); border-radius:8px; padding:8px; font-size:11px; font-weight:600; cursor:pointer; font-family:var(--sans); color:var(--blue); transition:all .15s;">Persona: Fraudbot (demo_key_001)</button>
-          <button onclick="setMLPreset('loan')" class="preset-btn" style="flex:1; background:var(--purple-l); border:1px solid var(--purple-b); border-radius:8px; padding:8px; font-size:11px; font-weight:600; cursor:pointer; font-family:var(--sans); color:var(--purple); transition:all .15s;">Persona: Loan Bot (loan_key_999)</button>
+          <button id="btn-persona-fraud" onclick="setMLPreset('fraud')" class="preset-btn" style="flex:1; background:var(--blue-l); border:1px solid var(--blue-b); border-radius:8px; padding:8px; font-size:11px; font-weight:600; cursor:pointer; font-family:var(--sans); color:var(--blue); transition:all .15s; display:none;">Persona: Fraudbot (demo_key_001)</button>
+          <button id="btn-persona-loan" onclick="setMLPreset('loan')" class="preset-btn" style="flex:1; background:var(--purple-l); border:1px solid var(--purple-b); border-radius:8px; padding:8px; font-size:11px; font-weight:600; cursor:pointer; font-family:var(--sans); color:var(--purple); transition:all .15s; display:none;">Persona: Loan Bot (loan_key_999)</button>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
           <div>
@@ -838,6 +838,7 @@ async function fetchAll() {
       toast(`✓ Loaded ${allLogs.length} logs · ${allIncidents.length} incidents`);
     }
     document.getElementById('demoKeyDisplay').textContent = `"${key}"`;
+    updatePersonaVisibility();
   } catch(e) {
     if (e.message && (e.message.includes('Failed to fetch') || e.message.includes('NetworkError'))) {
       toast('Backend is waking up — please wait ~60 seconds and try again (Render sleep mode)', 5000);
@@ -1108,6 +1109,23 @@ function setMLPreset(type) {
     toast('Switched to Loan Bot persona');
   }
   if (demoDisp) demoDisp.textContent = `"${apiKeyField.value}"`;
+  updatePersonaVisibility();
+}
+
+function updatePersonaVisibility() {
+  const key = getKey();
+  const f = document.getElementById('btn-persona-fraud');
+  const l = document.getElementById('btn-persona-loan');
+  if (!f || !l) return;
+  
+  if (key === 'demo_key_001') {
+    f.style.display = 'block'; l.style.display = 'none';
+  } else if (key === 'loan_key_999') {
+    f.style.display = 'none'; l.style.display = 'block';
+  } else {
+    // Other key — show both options as fallback
+    f.style.display = 'block'; l.style.display = 'block';
+  }
 }
 
 // Auto-fetch on load
@@ -1122,6 +1140,7 @@ window.addEventListener('load', () => {
     }
   }
   const key = getKey();
+  updatePersonaVisibility();
   if (key) fetchAll();
 });
 </script>
