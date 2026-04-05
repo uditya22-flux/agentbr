@@ -43,7 +43,7 @@ app.include_router(manual_router)
 app.include_router(report_html_router)
 app.include_router(disk_download_router)
 
-@app.get("/", include_in_schema=False)
+@app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
 def root():
     return FileResponse("dashboard.html")
 
