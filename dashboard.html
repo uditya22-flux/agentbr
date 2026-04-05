@@ -434,6 +434,10 @@ tbody tr:hover{background:var(--s2)}
         <span class="endpoint ep-post"><span class="ep-method">POST</span>/log-manual</span>
       </div>
       <div style="padding:20px;display:flex;flex-direction:column;gap:14px;">
+        <div style="display:flex; gap:10px; margin-bottom:10px;">
+          <button onclick="setMLPreset('fraud')" class="preset-btn" style="flex:1; background:var(--blue-l); border:1px solid var(--blue-b); border-radius:8px; padding:8px; font-size:11px; font-weight:600; cursor:pointer; font-family:var(--sans); color:var(--blue); transition:all .15s;">Persona: Fraudbot (demo_key_001)</button>
+          <button onclick="setMLPreset('loan')" class="preset-btn" style="flex:1; background:var(--purple-l); border:1px solid var(--purple-b); border-radius:8px; padding:8px; font-size:11px; font-weight:600; cursor:pointer; font-family:var(--sans); color:var(--purple); transition:all .15s;">Persona: Loan Bot (loan_key_999)</button>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
           <div>
             <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Agent Name *</label>
@@ -1084,6 +1088,26 @@ async function submitManualLog() {
     document.getElementById('ml-result').style.display = 'none';
   }
   btn.disabled = false; btn.textContent = '▶ Submit to Compliance Gateway';
+}
+
+function setMLPreset(type) {
+  const agentField = document.getElementById('ml-agent');
+  const actionField = document.getElementById('ml-action');
+  const apiKeyField = document.getElementById('apiKeyInput');
+  const demoDisp = document.getElementById('demoKeyDisplay');
+
+  if (type === 'fraud') {
+    agentField.value = 'FraudDetectorAgent';
+    actionField.value = 'approve';
+    apiKeyField.value = 'demo_key_001';
+    toast('Switched to Fraudbot persona');
+  } else {
+    agentField.value = 'LoanApprovalBot';
+    actionField.value = 'loan';
+    apiKeyField.value = 'loan_key_999';
+    toast('Switched to Loan Bot persona');
+  }
+  if (demoDisp) demoDisp.textContent = `"${apiKeyField.value}"`;
 }
 
 // Auto-fetch on load

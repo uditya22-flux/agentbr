@@ -11,7 +11,7 @@ import uuid
 import time
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--api_key", default="test123")
+parser.add_argument("--api_key", default="demo_key_001")
 parser.add_argument("--backend", default="https://agentbridge-test.onrender.com")
 args = parser.parse_args()
 

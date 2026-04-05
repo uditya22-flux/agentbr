@@ -55,29 +55,32 @@ print(f"\n🏦 Starting Loan Approval Agent")
 print(f"   API Key: {args.api_key}")
 print(f"   Session: {SESSION_ID}\n")
 
-# Provide a great, low risk loan scenario
-decide_loan(
-    amount=50000, 
-    credit_score=780, 
-    income=1200000, 
-    reasoning="Applicant has excellent credit history and high income. Approving loan securely."
-)
+# --- Scenarios based on random generation ---
+applicants = [
+    {"name": "Alice Shah", "amount": 45000, "score": 750, "income": 1500000, "reason": "Stable employment, high credit score."},
+    {"name": "Bob Gupta", "amount": 800000, "score": 580, "income": 400000, "reason": "High debt-to-income ratio, low credit score."},
+    {"name": "Charlie Rai", "amount": 12000, "score": 680, "income": 300000, "reason": "Small loan, moderate credit."},
+    {"name": "Deepa Singh", "amount": 950000, "score": 820, "income": 2500000, "reason": "Premium customer, high value approval."},
+    {"name": "Esha Verma", "amount": 50000, "score": 450, "income": 250000, "reason": "Multiple recent defaults, credit score bottomed out."}
+]
 
-# Provide a highly risky loan scenario
-decide_loan(
-    amount=900000, 
-    credit_score=520, 
-    income=200000, 
-    reasoning="Applicant has very low credit but we are approving the loan anyway because of a special override.",
-    expected_fraud=True
-)
+for app in applicants:
+    # Add some randomness to make it look like a live stream
+    time.sleep(random.uniform(0.5, 1.5))
+    
+    # Introduce variability in reasoning and confidence
+    conf = 0.9 if app['score'] > 700 else 0.4
+    if "Small loan" in app['reason']:
+        conf = 0.82
+        
+    decide_loan(
+        amount=app['amount'],
+        credit_score=app['score'],
+        income=app['income'],
+        reasoning=app['reason']
+    )
 
-# Provide a loan with terrible reasoning (AgentBridge will catch this!)
-decide_loan(
-    amount=10000, 
-    credit_score=600, 
-    income=50000, 
-    reasoning="idk giving them money"
-)
+print("\n🚀 Batch generation complete. Generating one 'Bad Reasoning' log to test compliance...")
+decide_loan(15000, 600, 50000, "no reason really just feel like it")
 
 print("\n✅ Loan Agent finished. Check the dashboard to see logs from 'loan-approval-bot'!")
