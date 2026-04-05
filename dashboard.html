@@ -591,9 +591,9 @@ function openDrawer(log) {
   body.innerHTML = `
     <div><div class="d-section-title">Overview</div>
     <div class="d-kv">
-      <div class="d-row"><span class="dk">Agent</span><span class="dv">${esc(log.agent_name)}</span></div>
-      <div class="d-row"><span class="dk">Action</span><span class="dv">${esc(log.action)}</span></div>
-      <div class="d-row"><span class="dk">Type</span><span class="dv">${esc(log.action_type)}</span></div>
+      <div class="d-row"><span class="dk">Agent</span><span class="dv">${esc(log.agent_name||log.agent_id||'—')}</span></div>
+      <div class="d-row"><span class="dk">Action</span><span class="dv">${esc(log.action||log.action_type||'—')}</span></div>
+      <div class="d-row"><span class="dk">Type</span><span class="dv">${esc(log.action_type||log.action||'—')}</span></div>
       <div class="d-row"><span class="dk">Risk</span><span class="dv"><span class="badge ${riskClass}">${esc(log.risk_level||'—')}</span></span></div>
       <div class="d-row"><span class="dk">Flagged</span><span class="dv">${flagged}</span></div>
       <div class="d-row"><span class="dk">Latency</span><span class="dv">${log.latency_ms != null ? log.latency_ms+'ms' : '—'}</span></div>
@@ -633,9 +633,9 @@ function renderLogTable(logs, wrapId, countId) {
       const ts = log.created_at ? new Date(log.created_at).toLocaleTimeString() : '—';
       return `<tr onclick="openDrawer(${esc(JSON.stringify(log))})">
         <td class="mono t3">${esc((log.decision_id||'—').substring(0,12))}…</td>
-        <td style="font-weight:500">${esc(log.agent_name||'—')}</td>
-        <td class="t2">${esc(log.action||'—')}</td>
-        <td><span class="action-pill">${esc(log.action_type||'—')}</span></td>
+        <td style="font-weight:500">${esc(log.agent_name||log.agent_id||'—')}</td>
+        <td class="t2">${esc(log.action||log.action_type||'—')}</td>
+        <td><span class="action-pill">${esc(log.action_type||log.action||'—')}</span></td>
         <td><span class="badge ${rc}">${esc(log.risk_level||'—')}</span></td>
         <td>${fl}</td>
         <td class="mono t2">${log.latency_ms!=null?log.latency_ms+'ms':'—'}</td>
