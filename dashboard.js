@@ -2,6 +2,7 @@
 // Dashboard Bypass: No login required
 let token = localStorage.getItem("token") || "demo_token_123";
 let org_id = localStorage.getItem("org_id") || "demo_org_123";
+const BACKEND_URL = "https://agent-bridge-lh2w.onrender.com"; // Your live endpoint
 
 // --- CONSTANTS ---
 const PERSONAS = {
@@ -71,19 +72,17 @@ async function loadInitialData() {
 
 // --- FETCHERS ---
 async function apiFetch(url, options = {}) {
+    const fullUrl = url.startsWith("http") ? url : `${BACKEND_URL}${url}`;
     const headers = {
         "Authorization": `Bearer ${token}`,
         "Content-Type": "application/json"
     };
     try {
-        const res = await fetch(url, { ...options, headers });
-        if (res.status === 401) {
-            localStorage.removeItem("token");
-            window.location.href = "login.html";
-        }
+        const res = await fetch(fullUrl, { ...options, headers });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return await res.json();
     } catch (err) {
-        console.error(`API Fetch Error [${url}]:`, err);
+        console.warn(`API Fetch Warning [${fullUrl}]:`, err);
         return null;
     }
 }
