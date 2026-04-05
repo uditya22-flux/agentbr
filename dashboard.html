@@ -301,6 +301,10 @@ tbody tr:hover{background:var(--s2)}
         <div class="card-head">
           <div class="card-title">RBI compliance report</div>
           <div style="display:flex;gap:10px;align-items:center">
+            <select id="reportAgentSelect" onchange="updateReportContext()" style="background:var(--s2); border:1px solid var(--border); border-radius:6px; padding:2px 8px; font-size:11px; font-family:var(--sans); color:var(--text); outline:none; cursor:pointer;">
+              <option value="demo_key_001">Fraudbot (demo_key_001)</option>
+              <option value="loan_key_999">Loan Bot (loan_key_999)</option>
+            </select>
             <span class="endpoint ep-get"><span class="ep-method">GET</span>/report</span>
             <span class="endpoint ep-get"><span class="ep-method">GET</span>/report/html</span>
             <span class="card-action" onclick="fetchReport()">↻ Load</span>
@@ -862,6 +866,13 @@ async function fetchIncidents() {
 async function fetchReport() {
   const key = getKey(); const backend = getBackend();
   if (!key) return;
+  
+  // Sync the report dropdown if the key matches
+  const sel = document.getElementById('reportAgentSelect');
+  if (sel && (key === 'demo_key_001' || key === 'loan_key_999')) {
+    sel.value = key;
+  }
+
   try {
     const res = await fetch(`${backend}/report?api_key=${encodeURIComponent(key)}`);
     const report = await res.json();
@@ -869,6 +880,16 @@ async function fetchReport() {
     updateRBIStatus(report);
     toast('✓ Report loaded');
   } catch(e) { toast('Failed to load report'); }
+}
+
+function updateReportContext() {
+  const sel = document.getElementById('reportAgentSelect');
+  const keyInput = document.getElementById('apiKeyInput');
+  if (keyInput) {
+    keyInput.value = sel.value;
+    document.getElementById('demoKeyDisplay').textContent = `"${sel.value}"`;
+  }
+  fetchReport();
 }
 
 async function fetchDrift() {
