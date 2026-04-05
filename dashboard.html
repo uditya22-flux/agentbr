@@ -1143,10 +1143,10 @@ function setMLPreset(type) {
     toast('Switched to Loan Bot persona');
   }
   if (demoDisp) demoDisp.textContent = `"${apiKeyField.value}"`;
-  updatePersonaVisibility();
+  updatePersonaVisibility(true);
 }
 
-function updatePersonaVisibility() {
+function updatePersonaVisibility(skipPreset = false) {
   const key = getKey();
   const f = document.getElementById('btn-persona-fraud');
   const l = document.getElementById('btn-persona-loan');
@@ -1154,8 +1154,10 @@ function updatePersonaVisibility() {
   
   if (key === 'demo_key_001') {
     f.style.display = 'block'; l.style.display = 'none';
+    if (!skipPreset && currentPersona !== 'fraud') setMLPreset('fraud');
   } else if (key === 'loan_key_999') {
     f.style.display = 'none'; l.style.display = 'block';
+    if (!skipPreset && currentPersona !== 'loan') setMLPreset('loan');
   } else {
     // Other key — show both options as fallback
     f.style.display = 'block'; l.style.display = 'block';
@@ -1174,7 +1176,7 @@ window.addEventListener('load', () => {
     }
   }
   const key = getKey();
-  updatePersonaVisibility();
+  updatePersonaVisibility(); 
   if (key) fetchAll();
 });
 </script>
