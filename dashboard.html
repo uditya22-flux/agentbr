@@ -422,10 +422,6 @@ tbody tr:hover{background:var(--s2)}
     </div>
   </div>
 
-</div>
-
-<!-- Drawer -->
-
   <!-- MANUAL LOG TAB -->
   <div class="tab-content" id="tab-manual">
     <div class="card">
@@ -501,13 +497,20 @@ tbody tr:hover{background:var(--s2)}
           <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Extra Input Fields (JSON — optional)</label>
           <textarea id="ml-extra" rows="2" placeholder='{"customer_id": "CUST_001", "risk_score": 0.3}' style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--mono);font-size:12px;color:var(--text);outline:none;resize:vertical;line-height:1.6;"></textarea>
         </div>
-        <button onclick="submitManualLog()" style="background:var(--teal);color:#000;border:none;border-radius:8px;padding:11px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);transition:background .15s;">
-          ▶ Submit to Compliance Gateway
-        </button>
+        <div style="display:flex;gap:10px;margin-top:6px;">
+          <button onclick="submitManualLog()" id="ml-submit" style="flex:2;background:var(--green);color:white;border:none;border-radius:10px;padding:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:all .2s;box-shadow:0 4px 12px var(--green-b);">
+            <span>▶</span> Submit to Compliance Gateway
+          </button>
+          <button onclick="randomizeMLInputs()" style="flex:1;background:var(--s2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:12px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:all .2s;">
+            <span>🎲</span> Randomize
+          </button>
+        </div>
         <div id="ml-result" style="display:none;padding:14px;border-radius:8px;font-size:12px;line-height:1.7;"></div>
       </div>
     </div>
   </div>
+
+</div>
 
 <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
 <div class="drawer" id="drawer">
@@ -532,7 +535,6 @@ let currentPersona = 'fraud';
 function normalizeBackendUrl(url) {
   if (!url) return url;
   let u = url.trim().replace(/\/$/, '');
-  // Common typo: https://name.onrender  (missing .com)
   if (/^https?:\/\/[a-z0-9-]+\.onrender$/i.test(u)) {
     u += '.com';
   }
@@ -571,7 +573,6 @@ function getBackend() {
     ? window.location.origin.replace(/\/$/, '')
     : '';
 
-  // Safety fallback: prevent stale/cached Railway URL from being used.
   if (/railway\.app/i.test(manual)) {
     if (input && sameOrigin) input.value = sameOrigin;
     return sameOrigin;
@@ -597,7 +598,12 @@ function toast(msg, dur=2800) {
 
 function setLive(txt) { document.getElementById('liveLabel').textContent = txt; }
 
-// ── Drawer ──────────────────────────────────────────────────────
+function esc(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
 function openDrawer(log) {
   document.getElementById('drawerDecisionId').textContent = log.decision_id || '—';
   document.getElementById('drawerTitle').textContent = log.agent_name || 'Log detail';
@@ -631,7 +637,6 @@ function closeDrawer() {
   document.getElementById('drawerOverlay').classList.remove('open');
 }
 
-// ── Table renderer ───────────────────────────────────────────────
 function renderLogTable(logs, wrapId, countId) {
   const wrap = document.getElementById(wrapId);
   document.getElementById(countId).textContent = logs.length + (logs.length===1?' entry':' entries');
@@ -661,7 +666,6 @@ function renderLogTable(logs, wrapId, countId) {
   </tbody></table>`;
 }
 
-// ── Stats ────────────────────────────────────────────────────────
 function updateStats(logs) {
   document.getElementById('statTotal').textContent = logs.length;
   const incidents = logs.filter(l => l.flagged).length;
@@ -675,7 +679,6 @@ function updateStats(logs) {
   document.getElementById('statLatency').textContent = avg || '—';
 }
 
-// ── RBI clause updater ───────────────────────────────────────────
 function updateRBIStatus(report) {
   if (!report) return;
   const clauseMap = {'1.3':'rbi-1-3','2.1':'rbi-2-1','3.1':'rbi-3-1','4.2':'rbi-4-2','4.4':'rbi-4-4','5.0':'rbi-5-0','5.2':'rbi-5-2','6.1':'rbi-6-1'};
@@ -692,7 +695,6 @@ function updateRBIStatus(report) {
   });
 }
 
-// ── Report renderer ──────────────────────────────────────────────
 function renderReport(report) {
   lastReport = report;
   const el = document.getElementById('reportContent');
@@ -751,7 +753,6 @@ function renderReport(report) {
     </div>`;
 }
 
-// ── Drift renderer ───────────────────────────────────────────────
 function renderDrift(data) {
   const el = document.getElementById('driftContent');
   if (data && data.detail) {
@@ -793,7 +794,6 @@ function renderDrift(data) {
   </div>`;
 }
 
-// ── Structuring renderer ─────────────────────────────────────────
 function renderStructuring(data) {
   const el = document.getElementById('structuringContent');
   if (data.status === 'clean') {
