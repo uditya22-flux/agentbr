@@ -2,9 +2,16 @@ import requests
 import json
 import time
 
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--backend", default="http://127.0.0.1:10000")
+parser.add_argument("--api_key", default="loan_key_999")
+args = parser.parse_args()
+
 # SETTINGS
-BACKEND_URL = "http://127.0.0.1:8000"
-LOAN_KEY = "loan_key_999"
+BACKEND_URL = args.backend
+LOAN_KEY = args.api_key
 
 # TEST CASES: Diverse loan applications
 test_cases = [
