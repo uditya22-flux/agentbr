@@ -448,39 +448,54 @@ tbody tr:hover{background:var(--s2)}
             <select id="ml-action" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;appearance:none;">
               <option value="approve">approve</option>
               <option value="loan">loan</option>
-              <option value="transfer">transfer</option>
               <option value="reject">reject</option>
               <option value="verify">verify</option>
-              <option value="query">query</option>
-              <option value="flag">flag</option>
             </select>
           </div>
-          <div>
-            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Amount (₹)</label>
+          
+          <!-- Contextual: Fraud -->
+          <div id="ml-field-fraud-amount">
+            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Transaction Amount (₹)</label>
             <input id="ml-amount" type="number" placeholder="e.g. 75000" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;">
           </div>
-          <div>
-            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Confidence (0.0–1.0)</label>
-            <input id="ml-confidence" type="number" step="0.01" min="0" max="1" placeholder="e.g. 0.85" value="0.85" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;">
-          </div>
-          <div>
-            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">KYC Verified</label>
-            <select id="ml-kyc" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;appearance:none;">
-              <option value="true">Yes — KYC verified</option>
-              <option value="false">No — KYC not verified</option>
-            </select>
-          </div>
-          <div>
-            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Is PEP?</label>
+          <div id="ml-field-fraud-pep">
+            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Is PEP (Politically Exposed)?</label>
             <select id="ml-pep" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;appearance:none;">
               <option value="false">No</option>
-              <option value="true">Yes — Politically Exposed Person</option>
+              <option value="true">Yes — PEP</option>
             </select>
+          </div>
+
+          <!-- Contextual: Loan -->
+          <div id="ml-field-loan-amount" style="display:none">
+            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Loan Amount requested (₹)</label>
+            <input id="ml-loan-amount" type="number" placeholder="e.g. 500000" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;">
+          </div>
+          <div id="ml-field-loan-credit" style="display:none">
+            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Credit Score (300-900)</label>
+            <input id="ml-credit" type="number" placeholder="e.g. 750" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;">
+          </div>
+          <div id="ml-field-loan-income" style="display:none">
+            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Annual Income (₹)</label>
+            <input id="ml-income" type="number" placeholder="e.g. 1200000" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;">
+          </div>
+
+          <!-- Common -->
+          <div>
+            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">KYC Status</label>
+            <select id="ml-kyc" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;appearance:none;">
+              <option value="true">Verified</option>
+              <option value="false">Not Verified</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Confidence Score</label>
+            <input id="ml-confidence" type="number" step="0.01" value="0.85" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;">
           </div>
         </div>
         <div>
-          <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Reasoning (required — RBI FREE-AI Sutra 6)</label>
-          <textarea id="ml-reasoning" rows="3" placeholder="Explain why the agent made this decision..." style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;resize:vertical;line-height:1.6;"></textarea>
+          <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Decision Reasoning (RBI Sutra 6)</label>
+          <textarea id="ml-reasoning" rows="2" placeholder="Why did the agent make this decision?" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;resize:vertical;line-height:1.6;"></textarea>
         </div>
         <div>
           <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Extra Input Fields (JSON — optional)</label>
@@ -512,6 +527,7 @@ tbody tr:hover{background:var(--s2)}
 let allLogs = [];
 let allIncidents = [];
 let lastReport = null;
+let currentPersona = 'fraud';
 
 function normalizeBackendUrl(url) {
   if (!url) return url;
@@ -1011,10 +1027,8 @@ async function submitManualLog() {
 
   const agent = document.getElementById('ml-agent').value.trim();
   const action = document.getElementById('ml-action').value;
-  const amount = parseFloat(document.getElementById('ml-amount').value) || 0;
   const confidence = parseFloat(document.getElementById('ml-confidence').value) || 0.85;
   const kyc = document.getElementById('ml-kyc').value === 'true';
-  const pep = document.getElementById('ml-pep').value === 'true';
   const reasoning = document.getElementById('ml-reasoning').value.trim();
 
   if (!agent) { toast('Agent name required'); return; }
@@ -1026,13 +1040,24 @@ async function submitManualLog() {
     try { extra = JSON.parse(extraRaw); } catch(e) { toast('Extra fields JSON is invalid'); return; }
   }
 
+  const input = { kyc_verified: kyc, ...extra };
+  
+  if (currentPersona === 'fraud') {
+    input.amount = parseFloat(document.getElementById('ml-amount').value) || 0;
+    input.is_pep = document.getElementById('ml-pep').value === 'true';
+  } else {
+    input.loan_amount = parseFloat(document.getElementById('ml-loan-amount').value) || 0;
+    input.credit_score = parseFloat(document.getElementById('ml-credit').value) || 0;
+    input.annual_income = parseFloat(document.getElementById('ml-income').value) || 0;
+  }
+
   const payload = {
     api_key: key,
     agent_name: agent,
     action_type: action,
     reasoning: reasoning,
     confidence: confidence,
-    input: { amount, kyc_verified: kyc, is_pep: pep, ...extra },
+    input: input,
     output: {}
   };
 
@@ -1092,20 +1117,29 @@ async function submitManualLog() {
 }
 
 function setMLPreset(type) {
+  currentPersona = type;
   const agentField = document.getElementById('ml-agent');
   const actionField = document.getElementById('ml-action');
   const apiKeyField = document.getElementById('apiKeyInput');
   const demoDisp = document.getElementById('demoKeyDisplay');
 
+  // Fields to toggle
+  const fraudFields = ['ml-field-fraud-amount', 'ml-field-fraud-pep'];
+  const loanFields = ['ml-field-loan-amount', 'ml-field-loan-credit', 'ml-field-loan-income'];
+
   if (type === 'fraud') {
     agentField.value = 'FraudDetectorAgent';
     actionField.value = 'approve';
     apiKeyField.value = 'demo_key_001';
+    fraudFields.forEach(id => document.getElementById(id).style.display = 'block');
+    loanFields.forEach(id => document.getElementById(id).style.display = 'none');
     toast('Switched to Fraudbot persona');
   } else {
     agentField.value = 'LoanApprovalBot';
     actionField.value = 'loan';
     apiKeyField.value = 'loan_key_999';
+    fraudFields.forEach(id => document.getElementById(id).style.display = 'none');
+    loanFields.forEach(id => document.getElementById(id).style.display = 'block');
     toast('Switched to Loan Bot persona');
   }
   if (demoDisp) demoDisp.textContent = `"${apiKeyField.value}"`;
