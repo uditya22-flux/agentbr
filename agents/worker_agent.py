@@ -59,7 +59,7 @@ Rules:
 
 class WorkerAgent:
     def __init__(self, api_key: Optional[str] = None, model: str = DEFAULT_MODEL):
-        key = api_key or os.environ.get("GEMINI_API_KEY", "")
+        key = (api_key or os.environ.get("GEMINI_API_KEY", "")).strip()
         if not key:
             raise ValueError("GEMINI_API_KEY is required for WorkerAgent")
         genai.configure(api_key=key)

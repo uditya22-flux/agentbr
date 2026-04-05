@@ -135,4 +135,6 @@ def generate_report(session_id: str, daos: List[DAO]) -> Dict[str, Any]:
         },
     }
 
-    return report
+    # Clean with the unified report transformer
+    from core_ai.report_cleaner import clean_report
+    return clean_report(report)

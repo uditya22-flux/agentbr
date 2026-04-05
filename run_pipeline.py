@@ -97,20 +97,16 @@ def main():
 
     trail = pipeline.run_batch(scenarios, log_to_backend=log_to_backend)
 
+    from core_ai.report_cleaner import consolidate_batch_report
+    consolidated = consolidate_batch_report(trail["results"])
+
     out_raw = "audit_trail.json"
     out_clean = "audit_trail_cleaned.json"
     with open(out_raw, "w", encoding="utf-8") as f:
         json.dump(trail, f, indent=2, default=str)
 
-    cleaned_only = {
-        "generated_at": trail["generated_at"],
-        "results": [
-            {"scenario": r["scenario"], "cleaned_report": r.get("cleaned_report"), "monitor": r.get("monitor")}
-            for r in trail["results"]
-        ],
-    }
     with open(out_clean, "w", encoding="utf-8") as f:
-        json.dump(cleaned_only, f, indent=2, default=str)
+        json.dump(consolidated, f, indent=2, default=str)
 
     print(f"\n  Wrote {out_raw} and {out_clean}")
 
