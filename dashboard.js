@@ -1,10 +1,7 @@
 // AgentBridge Dashboard Logic v6.2 - Manual Monitor + Behavioural Drift
-const token = localStorage.getItem("token");
-const org_id = localStorage.getItem("org_id");
-
-if (!token && !window.location.pathname.endsWith("login.html") && !window.location.pathname.endsWith("signup.html")) {
-    window.location.href = "login.html";
-}
+// Dashboard Bypass: No login required
+let token = localStorage.getItem("token") || "demo_token_123";
+let org_id = localStorage.getItem("org_id") || "demo_org_123";
 
 // --- CONSTANTS ---
 const PERSONAS = {

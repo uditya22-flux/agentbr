@@ -51,7 +51,7 @@ app.include_router(report_router)
 # Serve Frontend
 @app.get("/", include_in_schema=False)
 async def serve_index():
-    return FileResponse("index.html")
+    return FileResponse("dashboard.html")
 
 @app.get("/{page}.html", include_in_schema=False)
 async def serve_static_page(page: str):
