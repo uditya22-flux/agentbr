@@ -1083,12 +1083,14 @@ async function submitManualLog() {
 
   const payload = {
     api_key: key,
-    agent_name: agent,
+    agent_id: agent,
     action_type: action,
     reasoning: reasoning,
     confidence: confidence,
     input: input,
-    output: {}
+    output: {},
+    user_id: "demo_user_" + Math.floor(Math.random()*100),
+    session_id: "session_" + Math.floor(Math.random()*1000)
   };
 
   const btn = event.target;
@@ -1196,7 +1198,7 @@ window.addEventListener('load', () => {
     }
   }
   const key = getKey();
-  updatePersonaVisibility(); 
+  updatePersonaVisibility();
   if (key) fetchAll();
 });
 </script>
