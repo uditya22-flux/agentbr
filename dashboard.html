@@ -725,9 +725,8 @@ function renderReport(report) {
         <div style="font-size:12px;font-weight:600;color:${verdictColor}">${esc(verdict)}</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button onclick="downloadReportJSON()" style="flex:1;min-width:120px;background:var(--s2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--sans);">↓ Download JSON</button>
-        <button onclick="openPrintableReport()" style="flex:1;min-width:120px;background:var(--teal);color:#fff;border:none;border-radius:8px;padding:9px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--sans);">📄 Printable HTML</button>
-        <button onclick="printReport()" style="flex:1;min-width:120px;background:var(--text);color:#fff;border:none;border-radius:8px;padding:9px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--sans);">🖨 Print this tab</button>
+        <button onclick="openPrintableReport()" style="flex:1;min-width:120px;background:var(--teal);color:#fff;border:none;border-radius:8px;padding:9px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--sans);">📄 Export Official Report (PDF/HTML)</button>
+        <button onclick="downloadReportJSON()" style="min-width:140px;background:var(--s2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--sans);">↓ Raw JSON</button>
       </div>
     </div>`;
 }
