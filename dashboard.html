@@ -1099,9 +1099,32 @@ async function submitManualLog() {
   try {
     const res = await callApi('/decide', 'POST', payload);
     if (res.error) throw new Error(res.error);
-    toast('✓ Decision Processed: ' + (res.compliance_status || res.status), 5000);
-    // Forced fetch with delay for DB consistency
-    setTimeout(fetchAll, 800);
+    
+    // RENDER VERDICT
+    const el = document.getElementById('ml-result');
+    const verdict = res.compliance_status || res.status || 'unknown';
+    const verdictColor = verdict.toLowerCase().includes('allow') ? 'var(--green)' : 'var(--red)';
+    const riskColor = res.risk_level === 'high' || res.risk_level === 'critical' ? 'var(--red)' : res.risk_level === 'medium' ? 'var(--amber)' : 'var(--green)';
+
+    el.style.display = 'block';
+    el.style.background = 'var(--s2)';
+    el.style.border = `1px solid var(--border)`;
+    el.innerHTML = `
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;">
+        <span style="font-size:20px;font-weight:800;color:${verdictColor};font-family:var(--mono)">${verdict.toUpperCase()}</span>
+        <span style="font-size:12px;color:${riskColor};font-weight:700;background:var(--surface);padding:4px 10px;border-radius:6px;border:1px solid var(--border)">Risk: ${res.risk_level || '—'}</span>
+        <span style="font-size:12px;color:var(--t3);font-family:var(--mono)">Score: ${res.risk_score != null ? res.risk_score.toFixed(3) : '—'}</span>
+      </div>
+      <div style="margin-bottom:12px;">
+        <span style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Monitor Analysis</span>
+        <div style="margin-top:6px;font-size:13px;color:var(--text);line-height:1.6;background:var(--surface);padding:12px;border-radius:8px;border:1px solid var(--border)">${esc(res.ai_explanation || res.explanation || 'Analyzed against latest compliance policies.')}</div>
+      </div>
+      ${res.violations?.length ? `<div><span style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Policy Violations</span><div style="margin-top:6px;display:flex;flex-direction:column;gap:6px">${res.violations.map(v=>`<div style="font-size:11px;padding:8px 12px;background:var(--red-l);color:var(--red);border-radius:6px;border:1px solid var(--red-b)">${esc(v)}</div>`).join('')}</div></div>` : ''}
+      <div style="margin-top:12px;font-size:10px;color:var(--t4);font-family:var(--mono)">decision_id: ${esc(res.decision_id || '—')}</div>
+    `;
+
+    toast('✓ Decision Processed: ' + verdict, 4000);
+    setTimeout(fetchAll, 600);
   } catch(e) {
     const el = document.getElementById('ml-result');
     el.style.display = 'block';
