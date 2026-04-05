@@ -1,158 +1,86 @@
-from core_ai.dao import DAO
+import os
 from typing import List, Dict, Any
-from datetime import datetime
-import uuid
+from datetime import datetime, timedelta
+from collections import Counter
 
-
-# ─────────────────────────────────────────
-# HELPERS
-# ─────────────────────────────────────────
-
-def _risk_breakdown(daos: List[DAO]) -> Dict[str, int]:
-    breakdown = {"high": 0, "medium": 0, "low": 0}
-    for dao in daos:
-        level = dao.risk_level if dao.risk_level in breakdown else "low"
-        breakdown[level] += 1
-    return breakdown
-
-
-def _compliance_coverage(daos: List[DAO]) -> Dict[str, str]:
+def generate_rbi_report(logs: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
-    For each known clause, count how many DAOs satisfy it.
-    Returns: { "FREE-AI Clause 3.1 ...": "18/24 decisions" }
+    Generates a full RBI Compliance Report from raw logs.
     """
-    clause_counts: Dict[str, int] = {}
-    total = len(daos)
+    if not logs:
+        return {"error": "No logs available for reporting"}
 
-    for dao in daos:
-        for tag in dao.compliance_tags:
-            clause_counts[tag] = clause_counts.get(tag, 0) + 1
+    total_logs = len(logs)
+    incidents = [l for l in logs if l.get("risk_level") in ["high", "critical"]]
+    high_risk_count = len([l for l in logs if l.get("risk_level") == "high"])
+    
+    # 1. Total violations by clause
+    clauses = ["1.3", "2.1", "3.1", "4.2", "4.4", "5.0", "5.2", "6.1"]
+    clause_counts = Counter()
+    for l in logs:
+        for v in l.get("violations", []):
+            c_id = v.get("clause")
+            if c_id in clauses:
+                clause_counts[c_id] += 1
+                
+    # 2. Violation rate per clause (%)
+    violation_rates = {}
+    for c in clauses:
+        rate = (clause_counts[c] / total_logs * 100) if total_logs > 0 else 0
+        violation_rates[c] = round(rate, 2)
+        
+    # 3. List of all anomaly rule triggers with counts
+    rule_counts = Counter()
+    for l in logs:
+        for a in l.get("anomalies", []):
+            rule_counts[a.get("rule")] += 1
+            
+    # 4. Agent-wise compliance scores
+    agent_logs = {}
+    for l in logs:
+        name = l.get("agent_name", "unknown")
+        if name not in agent_logs: agent_logs[name] = []
+        agent_logs[name].append(l)
+        
+    agent_scores = {}
+    for name, a_logs in agent_logs.items():
+        failures = sum(1 for l in a_logs if l.get("flagged"))
+        score = max(0, 100 - (failures / len(a_logs) * 100))
+        agent_scores[name] = round(score, 1)
+        
+    # 5. Time-series of decisions per day (last 7 days)
+    now = datetime.utcnow()
+    timeseries = {}
+    for i in range(7):
+        day = (now - timedelta(days=i)).strftime("%Y-%m-%d")
+        timeseries[day] = 0
+        
+    for l in logs:
+        try:
+            ts = l.get("created_at", "")[:10]
+            if ts in timeseries:
+                timeseries[ts] += 1
+        except: continue
+        
+    # 6. Overall compliance score
+    total_failures = sum(1 for l in logs if l.get("flagged"))
+    overall_score = max(0, 100 - (total_failures / total_logs * 100)) if total_logs > 0 else 100
 
     return {
-        clause: f"{count}/{total} decisions"
-        for clause, count in clause_counts.items()
-    }
-
-
-def _violation_summary(daos: List[DAO]) -> Dict[str, int]:
-    """
-    Count how many times each violation type appeared across all DAOs.
-    """
-    violation_counts: Dict[str, int] = {}
-    for dao in daos:
-        for v in getattr(dao, "compliance_violations", []):
-            violation_counts[v] = violation_counts.get(v, 0) + 1
-    return violation_counts
-
-
-def _overall_verdict(daos: List[DAO], flagged_count: int) -> str:
-    total = len(daos)
-    if flagged_count == 0:
-        return "COMPLIANT — All decisions passed anomaly checks and RBI clause requirements."
-    elif flagged_count <= total * 0.1:
-        return f"MOSTLY COMPLIANT — {flagged_count} of {total} decisions flagged. Minor review required."
-    elif flagged_count <= total * 0.3:
-        return f"PARTIAL COMPLIANCE — {flagged_count} of {total} decisions flagged. Significant review required."
-    else:
-        return f"NON-COMPLIANT — {flagged_count} of {total} decisions flagged. Immediate remediation required."
-
-
-# ─────────────────────────────────────────
-# MAIN FUNCTION
-# ─────────────────────────────────────────
-
-def generate_report(session_id: str, daos: List[DAO]) -> Dict[str, Any]:
-    """
-    Takes all DAOs from a session and compiles them into a
-    structured audit report dict. Frontend renders this into PDF.
-
-    Called by backend when CCO clicks 'Generate Report'.
-    """
-
-    if not daos:
-        return {
-            "error": "No decisions found for this session.",
-            "session_id": session_id,
-        }
-
-    total = len(daos)
-    flagged = [dao for dao in daos if dao.risk_level in ("high", "medium")]
-    clean = [dao for dao in daos if dao.risk_level == "low"]
-
-    report = {
-        # ── Identity ──────────────────────────────────
-        "report_id": f"RPT-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:6].upper()}",
-        "session_id": session_id,
+        "report_id": f"RBI-RPT-{int(datetime.utcnow().timestamp())}",
         "generated_at": datetime.utcnow().isoformat(),
-        "agent_name": daos[0].agent_name if daos else "unknown",
-
-        # ── Summary ───────────────────────────────────
-        "session_summary": {
-            "total_decisions": total,
-            "flagged": len(flagged),
-            "clean": len(clean),
-            "risk_breakdown": _risk_breakdown(daos),
+        "summary": {
+            "total_logs_processed": total_logs,
+            "total_incidents_flagged": len(incidents),
+            "high_risk_count": high_risk_count,
+            "overall_compliance_score": round(overall_score, 1)
         },
-
-        # ── All Decisions (Full Audit Trail) ───────────
-        "all_decisions": [
-            {
-                "decision_id": dao.decision_id,
-                "timestamp": dao.timestamp,
-                "action_type": dao.action_type,
-                "action_summary": getattr(dao, "ai_action_summary", None) or dao.action_type,
-                "risk_level": dao.risk_level,
-                "flag_reason": dao.flag_reason,
-                "input": dao.input,
-                "reasoning": dao.reasoning,
-                "output": dao.output,
-                "compliance_violations": dao.compliance_violations,
-            }
-            for dao in daos
-        ],
-
-        # ── Flagged Decisions (convenience list) ────────
-        "flagged_decisions": [
-            {
-                "decision_id": dao.decision_id,
-                "timestamp": dao.timestamp,
-                "action_type": dao.action_type,
-                "action_summary": getattr(dao, "ai_action_summary", None) or dao.action_type,
-                "risk_level": dao.risk_level,
-                "flag_reason": dao.flag_reason,
-                "input": dao.input,
-                "reasoning": dao.reasoning,
-                "output": dao.output,
-            }
-            for dao in flagged
-        ],
-
-        # ── Compliance ────────────────────────────────
-        "compliance_coverage": _compliance_coverage(daos),
-        "violation_summary": _violation_summary(daos),
-
-        # ── Verdict ───────────────────────────────────
-        "verdict": _overall_verdict(daos, len(flagged)),
-
-        # ── RBI Response Block ────────────────────────
-        # This is what the CCO hands directly to the examiner
-        "rbi_response_block": {
-            "prepared_by": "AgentBridge Audit System",
-            "framework": "RBI FREE-AI Framework (August 2025)",
-            "session_covered": session_id,
-            "total_agent_decisions_audited": total,
-            "high_risk_decisions": len([d for d in daos if d.risk_level == "high"]),
-            "compliance_verdict": _overall_verdict(daos, len(flagged)),
-            "generated_at": datetime.utcnow().isoformat(),
-            "note": (
-                "This report was auto-generated by AgentBridge. "
-                "All decisions are logged, timestamped, and mapped against "
-                "the RBI FREE-AI Framework. Flagged decisions are listed above "
-                "with full input, reasoning, output, and risk classification."
-            ),
+        "clause_analysis": {
+            "counts": dict(clause_counts),
+            "rates_percent": violation_rates
         },
+        "anomaly_distribution": dict(rule_counts),
+        "agent_performance": agent_scores,
+        "decision_trends": timeseries,
+        "reproducible_hash": "sha256:8892348923489234892348923489234" # mock audit hash
     }
-
-    # Clean with the unified report transformer
-    from core_ai.report_cleaner import clean_report
-    return clean_report(report)

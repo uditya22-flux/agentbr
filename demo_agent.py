@@ -12,7 +12,7 @@ import time
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--api_key", default="demo_key_001")
-parser.add_argument("--backend", default="https://agentbridge-test.onrender.com")
+parser.add_argument("--backend", default="http://127.0.0.1:8000")
 args = parser.parse_args()
 
 HEADERS = {"X-API-Key": args.api_key, "Content-Type": "application/json"}

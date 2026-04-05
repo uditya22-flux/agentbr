@@ -582,6 +582,13 @@
                                 <!-- Dynamic Agents -->
                              </select>
                         </div>
+
+                        <div class="col-span-2">
+                             <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Decision Verdict (action_type)</label>
+                             <select id="ml-verdict-select" onchange="updateLivePreview()" class="w-full bg-[#161b22] border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-blue-500">
+                                <!-- Dynamic Verdicts -->
+                             </select>
+                        </div>
                         
                         <!-- Dynamic Fields Container -->
                         <div id="ml-dynamic-fields" class="col-span-2 grid grid-cols-2 gap-6">
@@ -679,6 +686,6 @@
     </div>
 
     <!-- Scripts -->
-    <script src="dashboard.js"></script>
+    <script src="dashboard.js?v=777"></script>
 </body>
 </html>

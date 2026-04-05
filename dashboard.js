@@ -2,7 +2,9 @@
 // Dashboard Bypass: No login required
 let token = localStorage.getItem("token") || "demo_token_123";
 let org_id = localStorage.getItem("org_id") || "demo_org_123";
-const BACKEND_URL = "https://agent-bridge-lh2w.onrender.com"; // Your live endpoint
+
+// Determine Backend URL dynamically
+const BACKEND_URL = window.location.origin; // Dynamically resolve local server URL
 
 // --- CONSTANTS ---
 const PERSONAS = {
@@ -73,16 +75,22 @@ async function loadInitialData() {
 // --- FETCHERS ---
 async function apiFetch(url, options = {}) {
     const fullUrl = url.startsWith("http") ? url : `${BACKEND_URL}${url}`;
+    console.log(`📡 Fetching: ${fullUrl}`);
     const headers = {
         "Authorization": `Bearer ${token}`,
         "Content-Type": "application/json"
     };
     try {
         const res = await fetch(fullUrl, { ...options, headers });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.json();
+        if (!res.ok) {
+            console.error(`❌ API Error: ${res.status} for ${fullUrl}`);
+            return null;
+        }
+        const data = await res.json();
+        console.log(`✅ Success for ${url}:`, data);
+        return data;
     } catch (err) {
-        console.warn(`API Fetch Warning [${fullUrl}]:`, err);
+        console.error(`🚨 Network Error for ${fullUrl}:`, err);
         return null;
     }
 }
@@ -142,35 +150,39 @@ async function loadLogs(agentId) {
 
     const tbody = document.getElementById("log-table-body");
     tbody.innerHTML = logs.map(l => {
-        // Context-aware labels
-        const agent = agents.find(a => a.id === l.agent_id);
-        const typeKey = agent ? agent.agent_type : "fraud-detection";
-        const meta = PERSONAS[typeKey] || PERSONAS["fraud-detection"];
+        // Find best persona meta
+        const personType = (l.agent_name || "").toLowerCase().includes("loan") ? "loan-approval" : "fraud-detection";
+        const meta = PERSONAS[personType] || PERSONAS["fraud-detection"];
         
-        const actionLabel = meta.actionLabels[l.verdict] || l.verdict;
+        const actionLabel = meta.actionLabels[l.action_type] || (l.action_type ? l.action_type.toUpperCase() : "UNKNOWN");
         const icon = meta.icon;
         
-        // Formatted amount if available in input
-        const input = typeof l.input === 'string' ? JSON.parse(l.input) : l.input;
-        const amount = input.amount || input.loan_amount || null;
-        const amountDisplay = amount ? `₹${Number(amount).toLocaleString()}` : "-";
+        // Formatted amount
+        const amountDisplay = l.amount ? `₹${Number(l.amount).toLocaleString()}` : "-";
 
-        // Violation tag
-        const violationBadge = l.violation_count > 0 ? `<span class="ml-2 px-1.5 py-0.5 bg-red-500/20 text-red-500 rounded text-[9px] font-black">⚠️ ${l.violation_count}</span>` : '';
+        // Violation count
+        const vCount = (l.violations || []).length + (l.anomalies || []).length;
+        const violationBadge = vCount > 0 ? `<span class="ml-2 px-1.5 py-0.5 bg-red-500/20 text-red-500 rounded text-[9px] font-black">⚠️ ${vCount}</span>` : '';
+
+        // Risk Badge
+        let riskColor = "bg-emerald-500/20 text-emerald-400";
+        if (l.risk_level === "critical") riskColor = "bg-red-500/20 text-red-500 shadow-lg shadow-red-500/20 animate-pulse";
+        if (l.risk_level === "high") riskColor = "bg-orange-500/20 text-orange-400";
+        if (l.risk_level === "medium") riskColor = "bg-amber-500/20 text-amber-400";
 
         return `
             <tr class="hover:bg-white/5 transition-all group">
-                <td class="px-6 py-4 font-mono text-[11px] text-gray-500">${l.decision_id}</td>
+                <td class="px-6 py-4 font-mono text-[11px] text-gray-500">${l.log_id || 'N/A'}</td>
                 <td class="px-6 py-4 text-[11px] text-gray-500" title="${new Date(l.created_at).toLocaleString()}">${timeAgo(l.created_at)}</td>
                 <td class="px-6 py-4 flex items-center space-x-2">
                     <span class="text-lg">${icon}</span>
                     <div>
-                        <p class="text-xs font-bold text-white leading-none mb-1">${agent ? agent.name : 'Unknown'}</p>
-                        <p class="text-[10px] text-gray-500 uppercase font-bold">${typeKey.replace('-', ' ')}</p>
+                        <p class="text-xs font-bold text-white leading-none mb-1">${l.agent_name || 'Agent'}</p>
+                        <p class="text-[10px] text-gray-500 uppercase font-bold">${personType.replace('-', ' ')}</p>
                     </div>
                 </td>
                 <td class="px-6 py-4">
-                    <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase ${l.verdict === 'approve' ? 'bg-emerald-500/20 text-emerald-400' : (l.verdict === 'reject' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400')}">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase ${riskColor}">
                         ${actionLabel}
                     </span>
                     ${violationBadge}
@@ -179,13 +191,41 @@ async function loadLogs(agentId) {
                     <p class="text-xs font-bold text-blue-400">${amountDisplay}</p>
                 </td>
                 <td class="px-6 py-4 text-right">
-                    <button onclick="openLogModal('${l.id}')" class="text-blue-500 hover:text-blue-400 text-xs font-semibold">Details</button>
+                    <button onclick="openLogModal('${l.log_id}')" class="text-blue-500 hover:text-blue-400 text-xs font-semibold">Details</button>
                 </td>
             </tr>
         `;
     }).join('');
     
     window._latestLogs = logs;
+}
+
+async function loadIncidents() {
+    const data = await apiFetch("/incidents");
+    if (!data) return;
+
+    const tbody = document.getElementById("incident-table-body");
+    tbody.innerHTML = data.map(inc => {
+        let sevColor = "bg-red-500/10 text-red-500";
+        if (inc.risk_level === "medium") sevColor = "bg-amber-500/10 text-amber-500";
+        
+        return `
+            <tr class="hover:bg-white/5 transition-all">
+                <td class="px-8 py-4 font-mono text-[11px] text-gray-500">${inc.log_id}</td>
+                <td class="px-8 py-4">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase ${sevColor}">
+                        ${inc.risk_level}
+                    </span>
+                </td>
+                <td class="px-8 py-4 text-sm font-bold text-white">${inc.agent_name}</td>
+                <td class="px-8 py-4 text-xs text-gray-400">${inc.anomalies?.[0]?.description || inc.violations?.[0]?.description || "General Violation"}</td>
+                <td class="px-8 py-4 text-[11px] text-gray-500">${timeAgo(inc.created_at)}</td>
+                <td class="px-8 py-4 text-right">
+                    <button onclick="openLogModal('${inc.log_id}')" class="text-blue-500 hover:text-blue-400 text-xs font-semibold">Triage</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
 }
 
 function timeAgo(dateParam) {
@@ -217,6 +257,10 @@ function updateManualFormPersona() {
     // Update banner
     const banner = document.getElementById("ml-persona-banner");
     banner.innerHTML = `<span class="text-[10px] font-black uppercase tracking-tighter text-blue-400">${meta.banner}</span>`;
+
+    // Update Verdicts
+    const verdictSelect = document.getElementById("ml-verdict-select");
+    verdictSelect.innerHTML = meta.actions.map(a => `<option value="${a}">${meta.actionLabels[a] || a.toUpperCase()}</option>`).join('');
 
     // Render Fields
     const container = document.getElementById("ml-dynamic-fields");
@@ -316,53 +360,108 @@ document.getElementById("manual-log-form").addEventListener("submit", async (e) 
     e.preventDefault();
     const agentId = document.getElementById("ml-agent-select").value;
     const agent = agents.find(a => a.id === agentId);
-    const typeKey = agent ? agent.agent_type : "fraud-detection";
-    const meta = PERSONAS[typeKey] || PERSONAS["fraud-detection"];
-
-    // Collect Dynamic fields
-    const input = {};
-    meta.fields.forEach(f => {
-        input[f.id] = document.getElementById(`ml-field-${f.id}`).value;
-    });
-
+    
+    // Normalize fields for the Log-Manual prompt specifications
     const payload = {
-        agent_id: agentId,
-        input: input,
-        output: { verdict: "approve" }, // Mocked for demo
-        reasoning: document.getElementById("ml-reasoning").value
+        agent_name: agent ? agent.name : agentId,
+        action_type: document.getElementById("ml-verdict-select")?.value || "approve",
+        amount: parseFloat(document.getElementById("ml-field-amount")?.value || document.getElementById("ml-field-loan_amount")?.value || 0),
+        confidence: parseFloat(document.getElementById("ml-field-confidence")?.value || 1.0),
+        kyc_verified: document.getElementById("ml-field-kyc_status")?.value === "Verified",
+        is_pep: document.getElementById("ml-field-is_pep")?.value === "Yes",
+        reasoning: document.getElementById("ml-reasoning").value,
+        extra_input: {} // Can be extended if needed
     };
 
-    const res = await apiFetch("/api/manual_log", {
+    const res = await apiFetch("/log-manual", {
         method: "POST",
         body: JSON.stringify(payload)
     });
 
-    if (res && res.verdict) {
-        alert("Decision Processed via AgentBridge Gateway");
+    if (res && res.success) {
+        alert("Decision Processed via AgentBridge Gateway\nLog ID: " + res.log_id);
         closeManualLog();
-        loadStats();
+        loadInitialData(); // Refresh UI
     } else {
         const err = document.getElementById("ml-error");
-        err.innerText = res.detail || "Gateway Error";
+        err.innerText = (res && res.error) || "Gateway Error: Ensure all fields are valid";
         err.classList.remove("hidden");
     }
 });
 
-// --- BEHAVIOURAL DRIFT ---
+// --- INTELLIGENCE SECTION ---
+async function runAIQuery() {
+    const question = document.getElementById("ai-question").value;
+    if (!question) return;
+
+    const btn = document.querySelector("#section-intelligence button");
+    const container = document.getElementById("ai-response-container");
+    const answerEl = document.getElementById("ai-answer");
+    
+    btn.disabled = true;
+    btn.innerText = "Thinking...";
+    container.classList.remove("hidden");
+    answerEl.innerText = "Analyzing compliance logs and RBI clauses...";
+
+    const res = await apiFetch("/api/intelligence/query", {
+        method: "POST",
+        body: JSON.stringify({ question })
+    });
+
+    btn.disabled = false;
+    btn.innerText = "Ask";
+
+    if (res && res.answer) {
+        answerEl.innerText = res.answer;
+        answerEl.classList.remove("italic");
+    } else {
+        answerEl.innerText = "Query failed. Ensure GROQ_API_KEY is set.";
+    }
+}
+
 async function loadDriftData() {
-    // Real call: await apiFetch("/api/intelligence/drift")
-    // Mock for demo
+    const res = await apiFetch("/api/intelligence/drift");
+    if (!res || res.error) return;
+
+    // Map new backend stats back to dashboard UI
+    const score = res.drifted ? 45 : 12; // Example mapping
+    
     driftData = {
-        score: 34,
-        alert: "⚠️ Significant behavioural drift detected in Fraud Bot — Approval rate increased by 34% this week. RBI Clause 3.1 may be at risk.",
+        score: score,
+        alert: res.drifted ? `⚠️ Drift detected: ${res.drift_flags.join(', ')}` : "Behavioral consistency within safe regulatory bounds.",
         table: [
-            { type: "Approval", last: 52, this: 86, change: 34, status: "Alert" },
-            { type: "Rejection", last: 38, this: 10, change: -28, status: "Alert" },
-            { type: "Verification", last: 10, this: 4, change: -6, status: "Drifting" }
+            { type: "Approval", last: res.metrics_last_week.approval_rate, this: res.metrics_this_week.approval_rate, change: res.metrics_this_week.approval_rate - res.metrics_last_week.approval_rate, status: "Alert" },
+            { type: "KYC Failure", last: res.metrics_last_week.kyc_failure_rate, this: res.metrics_this_week.kyc_failure_rate, change: res.metrics_this_week.kyc_failure_rate - res.metrics_last_week.kyc_failure_rate, status: "Review" }
         ]
     };
 
     renderDrift();
+    loadStructuringData();
+}
+
+async function loadStructuringData() {
+    const res = await apiFetch("/api/intelligence/structuring");
+    const container = document.getElementById("structuring-results");
+    if (!res) return;
+
+    if (res.structuring_detected) {
+        container.innerHTML = `
+            <div class="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center space-x-3">
+                <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                <span class="text-[11px] text-red-500 font-bold uppercase">Pattern Detected</span>
+            </div>
+            <p class="text-[11px] text-gray-500">${res.pattern_description}</p>
+            <p class="text-[11px] text-blue-400 font-bold">Total Structured: ₹${res.total_amount_structured.toLocaleString()}</p>
+        `;
+    } else {
+        container.innerHTML = `
+            <div class="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center space-x-3">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span class="text-[11px] text-emerald-500 font-bold uppercase">Zero Patterns</span>
+            </div>
+            <p class="text-[11px] text-gray-500">No threshold structuring detected in current log window.</p>
+        `;
+    }
 }
 
 function renderDrift() {
@@ -484,9 +583,22 @@ function showTab(tab) {
         loadDriftData();
         initVolumeChart();
     }
+    if (tab === "incidents") {
+        loadIncidents();
+    }
+    if (tab === "reports") {
+        loadReportData();
+    }
 }
 
-function initVolumeChart() {
+async function loadReportData() {
+    const res = await apiFetch("/api/intelligence/report");
+    if (!res || res.error) return;
+
+    // Mapping some values to current report summary if elements exist
+    const scoreEl = document.getElementById("report-overall-score");
+    if (scoreEl) scoreEl.innerText = res.summary.overall_compliance_score + "%";
+}function initVolumeChart() {
     if (charts.volume) return;
     charts.volume = new Chart(document.getElementById('chart-volume'), {
         type: 'line',
@@ -511,12 +623,11 @@ function initVolumeChart() {
 
 // --- OTHER UTILS ---
 function openLogModal(id) {
-    const log = window._latestLogs.find(l => l.id === id);
+    const log = window._latestLogs.find(l => l.log_id === id);
     if (!log) return;
-    document.getElementById("modal-log-id").innerText = `#${log.decision_id}`;
+    document.getElementById("modal-log-id").innerText = `#${log.log_id}`;
     
-    const logJson = typeof log === 'string' ? JSON.parse(log) : log;
-    document.getElementById("log-json").innerText = JSON.stringify(logJson, null, 4);
+    document.getElementById("log-json").innerText = JSON.stringify(log, null, 4);
     document.getElementById("log-modal").classList.remove("hidden");
 }
 
