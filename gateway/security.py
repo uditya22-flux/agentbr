@@ -34,6 +34,12 @@ def _get_agent_by_api_key(api_key: str):
     """Retrieve agent and org info by hashed api_key."""
     key_hash = hash_api_key(api_key)
     try:
+        # --- HARDCODED BYPASS FOR DEMO KEYS ---
+        if api_key == "demo_key_001":
+            return {"id": "fraud-bot-id", "org_id": "demo_org_123", "status": "active", "agent_type": "fraud-detection"}
+        if api_key == "loan_key_999":
+            return {"id": "loan-bot-id", "org_id": "demo_org_123", "status": "active", "agent_type": "loan-approval"}
+        
         result = supabase.table("agents")\
             .select("id, org_id, status")\
             .eq("api_key_hash", key_hash)\
@@ -61,15 +67,18 @@ async def auth_middleware(request: Request, call_next):
     # 1. Dashboard API Auth (JWT)
     if path.startswith("/api/"):
         auth_header = request.headers.get("Authorization")
+        
+        # Bypass dashboard JWT auth if missing
         if not auth_header or not auth_header.startswith("Bearer "):
-            return JSONResponse(status_code=401, content={"detail": "Bearer token required"})
+            request.state.user_id = "demo_user"
+            request.state.org_id = os.environ.get("DEFAULT_ORG_ID", "demo_org_123")
+            return await call_next(request)
         
         token = auth_header.split(" ")[1]
         payload = decode_access_token(token)
         
         # If no token but we want to allow public dashboard for demo
         if not payload:
-            # OPTIONAL: Allow fallback to a demo org if requested
             request.state.user_id = "demo_user"
             request.state.org_id = os.environ.get("DEFAULT_ORG_ID", "demo_org_123")
             return await call_next(request)
@@ -80,7 +89,6 @@ async def auth_middleware(request: Request, call_next):
         return await call_next(request)
 
     # 2. SDK / Agent Auth (API Key)
-    # These routes are usually /decide, /log, etc.
     api_key = request.headers.get("X-API-Key") or request.query_params.get("api_key")
     
     if api_key:
