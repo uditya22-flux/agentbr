@@ -680,12 +680,14 @@ function renderReport(report) {
     el.innerHTML = `<div class="empty-box"><div class="empty-text">${report?.message||'No report data'}</div></div>`;
     return;
   }
-  const ss = report.session_summary || {};
+  const ss = report.session_summary || report.summary || {};
   const total = ss.total_decisions || report.total_actions || allLogs.length;
-  const flagged = ss.flagged || report.incidents || 0;
+  const flagged = ss.flagged || ss.flagged_decisions || report.incidents || 0;
   const rb = ss.risk_breakdown || {};
   const score = report.compliance_score || Math.round(((total - flagged) / Math.max(total,1)) * 100);
-  const verdict = report.verdict || (report.rbi_response_block?.compliance_verdict) || '—';
+  
+  const verdictObj = report.verdict;
+  const verdict = (typeof verdictObj === 'string' ? verdictObj : verdictObj?.message) || (report.rbi_response_block?.compliance_verdict) || '—';
   const verdictColor = verdict.includes('NON') ? 'var(--red)' : verdict.includes('MOSTLY') ? 'var(--amber)' : 'var(--teal)';
 
   el.innerHTML = `
