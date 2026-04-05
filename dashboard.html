@@ -1550,16 +1550,8 @@
           </div>
           <div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;">
             <button type="button" onclick="submitManualLog()" id="ml-submit"
-              style="flex:2;min-width:200px;background:var(--green);color:white;border:none;border-radius:10px;padding:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:all .2s;box-shadow:0 4px 12px var(--green-b);font-family:var(--sans);">
+              style="width:100%;background:var(--green);color:white;border:none;border-radius:10px;padding:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:all .2s;box-shadow:0 4px 12px var(--green-b);font-family:var(--sans);">
               <span>▶</span> Submit Log
-            </button>
-            <button type="button" onclick="spamRandomLog()"
-              style="flex:1;min-width:120px;background:var(--purple);color:white;border:none;border-radius:10px;padding:12px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:all .2s;box-shadow:0 4px 12px var(--purple-b);font-family:var(--sans);">
-              <span>🚀</span> Spam Random
-            </button>
-            <button type="button" onclick="randomizeMLInputs()" id="ml-random"
-              style="flex:1;min-width:120px;background:var(--s2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:12px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:all .2s;font-family:var(--sans);">
-              <span>🎲</span> Fill Fields
             </button>
           </div>
           <div id="ml-result" style="display:none;padding:14px;border-radius:8px;font-size:12px;line-height:1.7;"></div>
@@ -2170,58 +2162,6 @@
       btn.disabled = false; btn.textContent = '▶ Submit to Compliance Gateway';
     }
 
-    function randomizeMLInputs() {
-      const kyc = document.getElementById('ml-kyc');
-      const confidence = document.getElementById('ml-confidence');
-      const reasoning = document.getElementById('ml-reasoning');
-      const action = document.getElementById('ml-action');
-
-      kyc.value = Math.random() > 0.2 ? 'true' : 'false';
-      confidence.value = (0.7 + Math.random() * 0.3).toFixed(2);
-
-      if (currentPersona === 'fraud') {
-        const amt = Math.floor(Math.random() * 80000) + 500;
-        document.getElementById('ml-amount').value = amt;
-        document.getElementById('ml-pep').value = Math.random() > 0.9 ? 'true' : 'false';
-        document.getElementById('ml-tx-type').value = ['upi', 'neft', 'rtgs', 'wire'][Math.floor(Math.random() * 4)];
-
-        if (amt > 50000 && kyc.value === 'false') {
-          action.value = 'reject';
-          reasoning.value = `High value transaction (₹${amt}) detected for unverified KYC profile. Mandatory rejection per RBI rules.`;
-        } else {
-          action.value = 'approve';
-          reasoning.value = `Standard transaction within user behavioral limits. KYC Verified.`;
-        }
-      } else {
-        const lamt = Math.floor(Math.random() * 1000000) + 50000;
-        const score = Math.floor(Math.random() * 500) + 350;
-        const dti = (0.1 + Math.random() * 0.5).toFixed(2);
-
-        document.getElementById('ml-loan-amount').value = lamt;
-        document.getElementById('ml-credit').value = score;
-        document.getElementById('ml-income').value = Math.floor(lamt * (1.5 + Math.random()));
-        document.getElementById('ml-dti').value = dti;
-        document.getElementById('ml-emp').value = Math.floor(Math.random() * 15);
-
-        if (score < 650) {
-          action.value = 'reject';
-          reasoning.value = `Application rejected due to sub-prime credit score (${score}). Fails threshold for auto-approval.`;
-        } else if (parseFloat(dti) > 0.40) {
-          action.value = 'reject';
-          reasoning.value = `DTI ratio (${(dti * 100).toFixed(0)}%) exceeds bank risk appetite of 40%.`;
-        } else {
-          action.value = 'loan';
-          reasoning.value = `Credit score ${score} and manageable DTI ratio. Applicant meets stability requirements.`;
-        }
-      }
-      toast(`🎲 Generated rules-based ${currentPersona} data`);
-    }
-
-    async function spamRandomLog() {
-      randomizeMLInputs();
-      await new Promise(r => setTimeout(r, 50));
-      await submitManualLog();
-    }
 
     function updatePersonaVisibility() {
       const key = getKey();
